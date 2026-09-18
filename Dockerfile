@@ -1,86 +1,87 @@
+# ============================================================
+# Policrafters CMS - Production Dockerfile
+# Django / Wagtail
+# Python 3.12
+# ============================================================
 
-# This stage installs build dependencies and compiles Python packages.
-# It will be discarded in the final image, keeping only the compiled packages.
+
+# ------------------------------------------------------------
+# Stage 1: Builder
+# ------------------------------------------------------------
 FROM python:3.12-slim-bookworm AS builder
 
-# Install system packages required to build Python packages.
-RUN apt-get update --yes --quiet && apt-get install --yes --quiet --no-install-recommends \
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+# Dependencias necesarias para compilar paquetes Python
+# y el driver de PostgreSQL si fuera necesario.
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    gcc \
     libpq-dev \
-    libmariadb-dev \
     libjpeg62-turbo-dev \
     zlib1g-dev \
     libwebp-dev \
- && rm -rf /var/lib/apt/lists/* \
- && python -m venv /opt/venv
+    && rm -rf /var/lib/apt/lists/*
+
+# Crear virtualenv independiente.
+RUN python -m venv /opt/venv
 
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install the project requirements.
-COPY requirements.txt /
-RUN pip install -r /requirements.txt
+# Instalar dependencias primero para aprovechar cache de Docker.
+COPY requirements.txt .
 
-# Install the application server.
-RUN pip install "gunicorn==25.1.0"
+RUN pip install --upgrade pip setuptools wheel \
+    && pip install -r requirements.txt
 
 
-# RUNTIME STAGE
-# Use an official Python runtime based on Debian 12 "bookworm" as a parent image.
+# ------------------------------------------------------------
+# Stage 2: Runtime
+# ------------------------------------------------------------
 FROM python:3.12-slim-bookworm AS runtime
 
-# Install runtime system packages required by Wagtail and Django.
-# These are the runtime libraries needed by the compiled Python packages.
-RUN apt-get update --yes --quiet && apt-get install --yes --quiet --no-install-recommends \
-    libpq5 \
-    libmariadb3 \
-    libjpeg62-turbo \
-    libwebp7 \
- && rm -rf /var/lib/apt/lists/*
-
-# Add user that will be used in the container.
-RUN useradd wagtail
-
-# Port used by this container to serve HTTP.
-EXPOSE 8000
-
-# Set environment variables.
-# 1. Force Python stdout and stderr streams to be unbuffered.
-# 2. Set PORT variable that is used by Gunicorn. This should match "EXPOSE"
-#    command.
-# 3. Add the virtual environment to PATH.
-ENV PYTHONUNBUFFERED=1 \
-    PORT=8000 \
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH"
 
-
-
-# Copy the virtual environment from the builder stage.
-COPY --from=builder /opt/venv /opt/venv
-
-# Use /app folder as a directory where the source code is stored.
 WORKDIR /app
 
-# Set this directory to be owned by the "wagtail" user. This Wagtail project
-# uses SQLite, the folder needs to be owned by the user that
-# will be writing to the database file.
-RUN chown wagtail:wagtail /app
+# Solo librerías necesarias en runtime.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    libjpeg62-turbo \
+    zlib1g \
+    libwebp7 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy the source code of the project into the container.
-COPY --chown=wagtail:wagtail . .
+# Copiar virtualenv construido en el stage anterior.
+COPY --from=builder /opt/venv /opt/venv
 
-# Use user "wagtail" to run the build commands below and the server itself.
+# Crear usuario sin privilegios para Django/Wagtail.
+RUN useradd --create-home --shell /bin/bash wagtail
+
+# Copiar código de la aplicación.
+COPY . /app
+
+# Crear directorios utilizados por Django/Wagtail.
+RUN mkdir -p /app/static /app/media \
+    && chown -R wagtail:wagtail /app
+
 USER wagtail
 
-# Collect static files.
-RUN python manage.py collectstatic --noinput --clear
+EXPOSE 8000
 
-# Runtime command that executes when "docker run" is called, it does the
-# following:
-#   1. Migrate the database.
-#   2. Start the application server.
-# WARNING:
-#   Migrating database at the same time as starting the server IS NOT THE BEST
-#   PRACTICE. The database should be migrated manually or using the release
-#   phase facilities of your hosting platform. This is used only so the
-#   Wagtail instance can be started with a simple "docker run" command.
-CMD set -xe; python manage.py migrate --noinput; gunicorn policrafters_cms.wsgi:application
+# El docker-compose.prod.yml se encargará de ejecutar:
+#   python manage.py migrate
+#   python manage.py collectstatic
+#
+# Este CMD sirve también como fallback si la imagen
+# se ejecuta directamente.
+CMD ["gunicorn", "policrafters_cms.wsgi:application", \
+     "--bind", "0.0.0.0:8000", \
+     "--workers", "3", \
+     "--timeout", "120"]

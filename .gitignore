@@ -1,14 +1,53 @@
-cat > .gitignore << 'EOF'
-venv/
+# ============================================================
+# Policrafters CMS
+# Django / Wagtail / Python / Docker
+# ============================================================
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Environment variables / secrets
 .env
-.env.local
-.env.production
+.env.*
+!.env.example
+
+# Local database
 db.sqlite3
-*.log
-.vscode/
+db.sqlite3-journal
+
+# Django / Wagtail generated files
 media/
 staticfiles/
+static/
+
+# macOS
 .DS_Store
-EOF
+.AppleDouble
+.LSOverride
+
+# IDEs
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+
+# Temporary / backup files
+*.tmp
+*.temp
+*.bak
+*~

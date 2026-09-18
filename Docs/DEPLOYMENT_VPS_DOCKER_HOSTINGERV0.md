@@ -83,7 +83,7 @@ Ruta sugerida:
 sudo mkdir -p /var/www
 sudo chown -R $USER:$USER /var/www
 cd /var/www
-git clone git@github.com:TU_ORG_O_USUARIO/policrafters-cms.git
+git clone git@github.com:ariasjf00/policrafters_cms.git
 cd policrafters-cms
 git checkout main
 ```
