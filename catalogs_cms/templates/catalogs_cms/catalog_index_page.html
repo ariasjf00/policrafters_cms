@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load wagtailimages_tags %}
+
+{% block body_class %}template-catalog-index{% endblock %}
+
+{% block content %}
+<main class="catalogs-preview">
+    <section class="section">
+        <p class="eyebrow">{{ page.catalogs_eyebrow|default:"Catalogs eyebrow" }}</p>
+        <h1>{{ page.catalogs_heading|default:page.title }}</h1>
+        <p class="meta-copy">Prev aria: {{ page.catalogs_prev_aria|default:"-" }} | Next aria: {{ page.catalogs_next_aria|default:"-" }}</p>
+    </section>
+
+    <section class="section">
+        <div class="cards">
+            {% for item in page.catalog_items.all %}
+            <article class="card">
+                <h2>{{ item.title }}</h2>
+                {% if item.image %}
+                    {% image item.image width-640 as catalog_image %}
+                    <img src="{{ catalog_image.url }}" alt="{{ item.image.description|default:item.title|add:' catalog cover image' }}">
+                {% endif %}
+                {% if item.file_document %}
+                <p><a href="{{ item.file_document.file.url }}" download>Download PDF</a></p>
+                {% elif item.file_url %}
+                <p><a href="{{ item.file_url }}" download>Download PDF</a></p>
+                {% endif %}
+            </article>
+            {% empty %}
+            <p class="empty">No catalogs yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+</main>
+{% endblock content %}

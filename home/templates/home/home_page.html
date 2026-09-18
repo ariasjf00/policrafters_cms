@@ -1,21 +1,146 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static wagtailimages_tags %}
 
 {% block body_class %}template-homepage{% endblock %}
 
 {% block extra_css %}
-
-{% comment %}
-Delete the line below if you're just getting started and want to remove the welcome screen!
-{% endcomment %}
-<link rel="stylesheet" href="{% static 'css/welcome_page.css' %}">
+<link rel="stylesheet" href="{% static 'css/home_page.css' %}">
 {% endblock extra_css %}
 
 {% block content %}
+<main class="home-preview">
+	<section class="section hero">
+		<div>
+			<p class="eyebrow">{{ page.hero_eyebrow|default:"Hero eyebrow" }}</p>
+			<h1>{{ page.hero_heading|default:page.title }}</h1>
+			<p class="cta">{{ page.hero_cta|default:"Hero CTA" }}</p>
 
-{% comment %}
-Delete the line below if you're just getting started and want to remove the welcome screen!
-{% endcomment %}
-{% include 'home/welcome_page.html' %}
+			{% if page.hero_video_horizontal %}
+			<p><strong>Video H:</strong> <a href="{{ page.hero_video_horizontal }}">{{ page.hero_video_horizontal }}</a></p>
+			{% endif %}
+			{% if page.hero_video_vertical %}
+			<p><strong>Video V:</strong> <a href="{{ page.hero_video_vertical }}">{{ page.hero_video_vertical }}</a></p>
+			{% endif %}
+		</div>
+
+		<div class="hero-media-grid">
+			{% if page.hero_image_horizontal %}
+			<figure>
+				{% image page.hero_image_horizontal width-960 as img %}
+				<img src="{{ img.url }}" alt="{{ page.hero_image_horizontal.description|default:'Hero horizontal image for Policrafters home page' }}">
+				<figcaption>hero_image_horizontal</figcaption>
+			</figure>
+			{% endif %}
+
+			{% if page.hero_image_vertical %}
+			<figure>
+				{% image page.hero_image_vertical width-640 as img %}
+				<img src="{{ img.url }}" alt="{{ page.hero_image_vertical.description|default:'Hero vertical image for Policrafters home page' }}">
+				<figcaption>hero_image_vertical</figcaption>
+			</figure>
+			{% endif %}
+
+			{% if page.site_logo %}
+			<figure>
+				{% image page.site_logo width-320 as img %}
+				<img src="{{ img.url }}" alt="{{ page.site_logo.description|default:'Policrafters logo' }}">
+				<figcaption>site_logo</figcaption>
+			</figure>
+			{% endif %}
+		</div>
+	</section>
+
+	<section class="section">
+		<p class="eyebrow">{{ page.projects_eyebrow|default:"Projects eyebrow" }}</p>
+		<h2>{{ page.projects_heading|default:"Projects heading" }}</h2>
+		<p class="meta-copy">CTA: {{ page.projects_cta|default:"-" }}</p>
+		<div class="meta-copy">
+			Prev aria: {{ page.projects_prev_aria|default:"-" }} | Next aria: {{ page.projects_next_aria|default:"-" }}
+		</div>
+
+		<div class="cards">
+			{% for item in page.featured_projects_items.all %}
+			<article class="card">
+				<h3>{{ item.title }}</h3>
+				<p class="meta-copy">slug: {{ item.slug }}</p>
+				{% if item.thumbnail %}
+					{% image item.thumbnail width-640 as thumb %}
+					<img src="{{ thumb.url }}" alt="{{ item.thumbnail.description|default:item.title|add:' project image' }}">
+				{% endif %}
+				<p>{{ item.description }}</p>
+			</article>
+			{% empty %}
+			<p class="empty">No featured projects yet.</p>
+			{% endfor %}
+		</div>
+	</section>
+
+	<section class="section">
+		<p class="eyebrow">{{ page.about_eyebrow|default:"About eyebrow" }}</p>
+		<h2>{{ page.about_heading|default:"About heading" }}</h2>
+		<p>{{ page.about_body_1|default:"About body 1" }}</p>
+		<p>{{ page.about_body_2|default:"About body 2" }}</p>
+		<p class="meta-copy">{{ page.about_brands_label|default:"About brands label" }}</p>
+		<p class="meta-copy">CTA: {{ page.about_cta|default:"-" }}</p>
+	</section>
+
+	<section class="section">
+		<p class="eyebrow">{{ page.team_eyebrow|default:"Team eyebrow" }}</p>
+		<h2>{{ page.team_heading|default:"Team heading" }}</h2>
+
+		<div class="cards">
+			{% for item in page.team_members_items.all %}
+			<article class="card">
+				<h3>{{ item.name }}</h3>
+				<p class="meta-copy">{{ item.role }}</p>
+				{% if item.photo %}
+					{% image item.photo width-640 as photo %}
+					<img src="{{ photo.url }}" alt="{{ item.photo.description|default:item.name|add:' portrait photo' }}">
+				{% endif %}
+				<p>{{ item.bio }}</p>
+			</article>
+			{% empty %}
+			<p class="empty">No team members yet.</p>
+			{% endfor %}
+		</div>
+	</section>
+
+	<section class="section">
+		<p class="eyebrow">{{ page.values_eyebrow|default:"Values eyebrow" }}</p>
+		<h2>{{ page.values_heading|default:"Values heading" }}</h2>
+		<p class="meta-copy">Prev aria: {{ page.values_prev_aria|default:"-" }} | Next aria: {{ page.values_next_aria|default:"-" }}</p>
+
+		<div class="cards">
+			{% for item in page.values_slide_items.all %}
+			<article class="card">
+				<h3>{{ item.title }}</h3>
+				{% if item.image %}
+					{% image item.image width-640 as value_image %}
+					<img src="{{ value_image.url }}" alt="{{ item.image.description|default:item.title|add:' value slide image' }}">
+				{% endif %}
+				<p>{{ item.description }}</p>
+			</article>
+			{% empty %}
+			<p class="empty">No value slides yet.</p>
+			{% endfor %}
+		</div>
+	</section>
+
+	<section class="section">
+		<h2>{{ page.contact_heading|default:"Contact heading" }}</h2>
+		<p class="meta-copy">CTA: {{ page.contact_cta|default:"-" }}</p>
+		<ul class="links">
+			{% for item in page.contact_link_items.all %}
+			<li>
+				<p><strong>{{ item.title }}</strong></p>
+				<p>{{ item.description }}</p>
+				<p><a href="{{ item.url }}">{{ item.url }}</a></p>
+			</li>
+			{% empty %}
+			<li class="empty">No contact links yet.</li>
+			{% endfor %}
+		</ul>
+	</section>
+</main>
 
 {% endblock content %}

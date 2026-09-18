@@ -11,10 +11,34 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+import os
 from pathlib import Path
+
+from decouple import Config, RepositoryEnv
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 BASE_DIR = PROJECT_DIR.parent
+
+
+def _get_config_from_env_files():
+    """Load variables from .env.local first, then .env if available."""
+    for env_file in (BASE_DIR / ".env.local", BASE_DIR / ".env"):
+        if env_file.exists():
+            return Config(RepositoryEnv(str(env_file)))
+    return None
+
+
+_ENV_CONFIG = _get_config_from_env_files()
+
+
+def env(name, default=None, cast=str):
+    if _ENV_CONFIG is not None:
+        return _ENV_CONFIG(name, default=default, cast=cast)
+
+    value = os.getenv(name, default)
+    if cast is int and value is not None:
+        return int(value)
+    return value
 
 
 # Quick-start development settings - unsuitable for production
@@ -25,9 +49,13 @@ BASE_DIR = PROJECT_DIR.parent
 
 INSTALLED_APPS = [
     "home",
+    "catalogs_cms",
+    "contact_cms",
     "search",
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",
+    "wagtail_localize",
+    "wagtail_localize.locales",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",
@@ -40,26 +68,39 @@ INSTALLED_APPS = [
     "modelcluster",
     "taggit",
     "django_filters",
+    "django.contrib.postgres",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
+    "policrafters_cms.middleware.force_preview_locale_middleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "wagtail.contrib.redirects.middleware.RedirectMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = "policrafters_cms.urls"
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:4321",
+]
+
+
+# Si usas cookies/sesión/autenticación desde el frontend
+CORS_ALLOW_CREDENTIALS = True
 
 TEMPLATES = [
     {
@@ -85,12 +126,30 @@ WSGI_APPLICATION = "policrafters_cms.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+db_name = env("DB_NAME", default=env("POSTGRES_DB", default=""))
+db_user = env("DB_USER", default=env("POSTGRES_USER", default=""))
+db_password = env("DB_PASSWORD", default=env("POSTGRES_PASSWORD", default=""))
+db_host = env("DB_HOST", default=env("POSTGRES_HOST", default="localhost"))
+db_port = env("DB_PORT", default=env("POSTGRES_PORT", default="5432"))
+
+if db_name:
+    DATABASES = {
+        "default": {
+            "ENGINE": env("DB_ENGINE", default="django.db.backends.postgresql"),
+            "NAME": db_name,
+            "USER": db_user,
+            "PASSWORD": db_password,
+            "HOST": db_host,
+            "PORT": db_port,
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 
 # Password validation
@@ -115,7 +174,12 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "en"
+
+LANGUAGES = [
+    ("en", "English"),
+    ("es", "Spanish"),
+]
 
 TIME_ZONE = "UTC"
 
@@ -161,6 +225,8 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 10_000
 # Wagtail settings
 
 WAGTAIL_SITE_NAME = "policrafters_cms"
+WAGTAIL_I18N_ENABLED = True
+WAGTAIL_CONTENT_LANGUAGES = LANGUAGES
 
 # Search
 # https://docs.wagtail.org/en/stable/topics/search/backends.html
@@ -181,4 +247,4 @@ WAGTAILADMIN_BASE_URL = "http://example.com"
 WAGTAILDOCS_EXTENSIONS = ['csv', 'docx', 'key', 'odt', 'pdf', 'pptx', 'rtf', 'txt', 'xlsx', 'zip']
 
 # Maximum upload size for documents in bytes.
-WAGTAILDOCS_MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10MB
+WAGTAILDOCS_MAX_UPLOAD_SIZE = 30 * 1024 * 1024  # 30MB

@@ -1,0 +1,294 @@
+#
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-09-01 21:50:07.070232+00:00\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"X-WagtailLocalize-TranslationID: b7f02eb4-25f8-4ce1-a3a6-f4c685020f1e\n"
+
+msgctxt "title"
+msgid "Home"
+msgstr ""
+
+msgctxt "slug"
+msgid "home"
+msgstr ""
+
+msgctxt "hero_eyebrow"
+msgid "WHERE INNOVATION MEETS DESIGN"
+msgstr "DONDE LA INNOVACIÓN SE ENCUENTRA CON EL DISEÑO"
+
+msgctxt "hero_heading"
+msgid "Your Premier Interiors &amp; Architectural Partner"
+msgstr "Tu Socio Experto en Interiores y Arquitectura"
+
+msgctxt "hero_cta"
+msgid "CONTAC US NOW"
+msgstr "CONTÁCTANOS AHORA"
+
+msgctxt "projects_eyebrow"
+msgid "Our projects"
+msgstr "Nuestros proyectos"
+
+msgctxt "projects_heading"
+msgid "SEE WHAT WE CAN CREATE"
+msgstr "MIRA LO QUE PODEMOS CREAR"
+
+msgctxt "projects_cta"
+msgid "SEE ALL PROJECTS"
+msgstr "Ver todos los proyectos"
+
+msgctxt "projects_prev_aria"
+msgid "See project before"
+msgstr ""
+
+msgctxt "projects_next_aria"
+msgid "See next proejct"
+msgstr ""
+
+msgctxt "projects_carousel_aria"
+msgid "Carrusel's projects"
+msgstr ""
+
+msgctxt "projects_dot_aria"
+msgid "Go to Project"
+msgstr ""
+
+msgctxt "about_eyebrow"
+msgid "About Us, Brands"
+msgstr ""
+
+msgctxt "about_heading"
+msgid "WELCOME TO POLICRAFTERS"
+msgstr ""
+
+msgctxt "about_body_1"
+msgid ""
+"At Policrafters, we take pride in delivering solutions that are not only innovative but also highly customizable to meet the unique needs of each client. Our commitment to excellence is reflected in"
+" every project we undertake, from concept to completion. A distinguished name in Interior Design and Architecture Solutions."
+msgstr ""
+
+msgctxt "about_body_2"
+msgid ""
+"Crafted in the United States using premium-quality materials and cutting-edge technology, our products are a testament to the expertise and dedication of our seasoned team. Our workforce brings a "
+"wealth of experience to the table, enabling us to design, manufacture, and install bespoke solutions across South Florida and beyond. Whether you're in the market for intricate glasswork, aluminum, "
+"other metals, or wood craftsmanship, Policrafters is equipped to bring your vision to life."
+msgstr ""
+
+msgctxt "about_brands_label"
+msgid "Our Brands"
+msgstr ""
+
+msgctxt "about_cta"
+msgid "Know More"
+msgstr ""
+
+msgctxt "team_eyebrow"
+msgid "Our Team, Expertise"
+msgstr ""
+
+msgctxt "team_heading"
+msgid "THE PEOPLE BEHIND THE CRAFT"
+msgstr ""
+
+msgctxt "values_eyebrow"
+msgid "Our Values"
+msgstr ""
+
+msgctxt "values_heading"
+msgid "THE PRINCIPLES BEHIND EVERYTHING WE CREATE"
+msgstr ""
+
+msgctxt "values_prev_aria"
+msgid "See before value"
+msgstr ""
+
+msgctxt "values_next_aria"
+msgid "SDee next Value"
+msgstr ""
+
+msgctxt "values_carousel_aria"
+msgid "Values's carrusel"
+msgstr ""
+
+msgctxt "values_dot_aria"
+msgid "Go to Value"
+msgstr ""
+
+msgctxt "catalogs_eyebrow"
+msgid "Our Catalog"
+msgstr ""
+
+msgctxt "catalogs_heading"
+msgid "EXPLORE OUR COLLECTIONS AND SOLUTIONS"
+msgstr ""
+
+msgctxt "catalogs_prev_aria"
+msgid "See catalog before"
+msgstr ""
+
+msgctxt "catalogs_next_aria"
+msgid "See next catologue"
+msgstr ""
+
+msgctxt "catalogs_dot_aria"
+msgid "Go to catolgue item"
+msgstr ""
+
+msgctxt "contact_heading"
+msgid "Would you like to get direct contact with Policrafters?"
+msgstr ""
+
+msgctxt "contact_cta"
+msgid "Learn More"
+msgstr ""
+
+msgctxt "featured_projects_items.cb0cc881-c023-4f7d-8021-ba9456c8d3be.title"
+msgid "Pergola Thermal"
+msgstr ""
+
+msgctxt "featured_projects_items.cb0cc881-c023-4f7d-8021-ba9456c8d3be.slug"
+msgid "pergola"
+msgstr ""
+
+msgctxt "featured_projects_items.cb0cc881-c023-4f7d-8021-ba9456c8d3be.description"
+msgid "Durable thermal structure designed for comfortable outdoor spaces all year round."
+msgstr ""
+
+msgctxt "featured_projects_items.b78960b4-9432-4b7f-95d7-0ae41f7ed5aa.title"
+msgid "Custom Frameless"
+msgstr ""
+
+msgctxt "featured_projects_items.b78960b4-9432-4b7f-95d7-0ae41f7ed5aa.slug"
+msgid "frameless"
+msgstr ""
+
+msgctxt "featured_projects_items.b78960b4-9432-4b7f-95d7-0ae41f7ed5aa.description"
+msgid ""
+"(en) Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque quis imperdiet quam. Sed at sodales justo. Suspendisse euismod rhoncus mauris. Duis convallis ante sit amet nisi pharetra "
+"accumsan. Cras at nisi ornare, posuere lectus ac"
+msgstr ""
+
+msgctxt "featured_projects_items.4afa68d7-2be7-4bcb-96e6-0992a2c1b9b4.title"
+msgid "S-Roller Gold"
+msgstr ""
+
+msgctxt "featured_projects_items.4afa68d7-2be7-4bcb-96e6-0992a2c1b9b4.slug"
+msgid "shower-roller"
+msgstr ""
+
+msgctxt "featured_projects_items.4afa68d7-2be7-4bcb-96e6-0992a2c1b9b4.description"
+msgid ""
+"(en) Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque quis imperdiet quam. Sed at sodales justo. Suspendisse euismod rhoncus mauris. Duis convallis ante sit amet nisi pharetra "
+"accumsan. Cras at nisi ornare, posuere lectus ac"
+msgstr ""
+
+msgctxt "featured_projects_items.5060b635-22d4-4f15-b10a-124e2318b0a9.title"
+msgid "Vienna Shower Door"
+msgstr ""
+
+msgctxt "featured_projects_items.5060b635-22d4-4f15-b10a-124e2318b0a9.slug"
+msgid "vinea-shower"
+msgstr ""
+
+msgctxt "featured_projects_items.5060b635-22d4-4f15-b10a-124e2318b0a9.description"
+msgid ""
+"(en) Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque quis imperdiet quam. Sed at sodales justo. Suspendisse euismod rhoncus mauris. Duis convallis ante sit amet nisi pharetra "
+"accumsan. Cras at nisi ornare, posuere lectus ac"
+msgstr ""
+
+msgctxt "team_members_items.bf717b4b-e51a-4c4e-bad7-158e168fa920.name"
+msgid "Jhon Smith"
+msgstr ""
+
+msgctxt "team_members_items.bf717b4b-e51a-4c4e-bad7-158e168fa920.role"
+msgid "Project Lead"
+msgstr ""
+
+msgctxt "team_members_items.bf717b4b-e51a-4c4e-bad7-158e168fa920.bio"
+msgid ""
+"(en) orem ipsum dolor sit amet, consectetur adipiscing elit. Quisque quis imperdiet quam. Sed at sodales justo. Suspendisse euismod rhoncus mauris. Duis convallis ante sit amet nisi pharetra "
+"accumsan. Cras at nisi ornare, posuere lectus ac."
+msgstr ""
+
+msgctxt "team_members_items.6d4efcd6-9bf8-4f5b-a06b-dbe4fe8604bc.name"
+msgid "Pablo Ortega"
+msgstr ""
+
+msgctxt "team_members_items.6d4efcd6-9bf8-4f5b-a06b-dbe4fe8604bc.role"
+msgid "Salesman"
+msgstr ""
+
+msgctxt "team_members_items.6d4efcd6-9bf8-4f5b-a06b-dbe4fe8604bc.bio"
+msgid ""
+"(en) orem ipsum dolor sit amet, consectetur adipiscing elit. Quisque quis imperdiet quam. Sed at sodales justo. Suspendisse euismod rhoncus mauris. Duis convallis ante sit amet nisi pharetra "
+"accumsan. Cras at nisi ornare, posuere lectus ac."
+msgstr ""
+
+msgctxt "team_members_items.a1416c5e-dbe0-45be-ad0b-012d610634e9.name"
+msgid "Darly Queen"
+msgstr ""
+
+msgctxt "team_members_items.a1416c5e-dbe0-45be-ad0b-012d610634e9.role"
+msgid "Designer"
+msgstr ""
+
+msgctxt "team_members_items.a1416c5e-dbe0-45be-ad0b-012d610634e9.bio"
+msgid ""
+"(en) Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque quis imperdiet quam. Sed at sodales justo. Suspendisse euismod rhoncus mauris. Duis convallis ante sit amet nisi pharetra "
+"accumsan. Cras at nisi ornare, posuere lectus ac."
+msgstr ""
+
+msgctxt "team_members_items.08f511c8-0381-4e08-a82e-ed5f515c5949.name"
+msgid "Jennifer Brown"
+msgstr ""
+
+msgctxt "team_members_items.08f511c8-0381-4e08-a82e-ed5f515c5949.role"
+msgid "Sales Director"
+msgstr ""
+
+msgctxt "team_members_items.08f511c8-0381-4e08-a82e-ed5f515c5949.bio"
+msgid ""
+"(en) orem ipsum dolor sit amet, consectetur adipiscing elit. Quisque quis imperdiet quam. Sed at sodales justo. Suspendisse euismod rhoncus mauris. Duis convallis ante sit amet nisi pharetra "
+"accumsan. Cras at nisi ornare, posuere lectus ac."
+msgstr ""
+
+msgctxt "values_slide_items.0780518b-49c7-45b6-a2d2-f422ba01386c.title"
+msgid "Quality"
+msgstr ""
+
+msgctxt "values_slide_items.0780518b-49c7-45b6-a2d2-f422ba01386c.description"
+msgid ""
+"(en) orem ipsum dolor sit amet, consectetur adipiscing elit. Quisque quis imperdiet quam. Sed at sodales justo. Suspendisse euismod rhoncus mauris. Duis convallis ante sit amet nisi pharetra "
+"accumsan. Cras at nisi ornare, posuere lectus ac."
+msgstr ""
+
+msgctxt "values_slide_items.28a75d12-7e80-492c-be8a-3e830c25fece.title"
+msgid "Durability"
+msgstr ""
+
+msgctxt "values_slide_items.28a75d12-7e80-492c-be8a-3e830c25fece.description"
+msgid ""
+"(en) orem ipsum dolor sit amet, consectetur adipiscing elit. Quisque quis imperdiet quam. Sed at sodales justo. Suspendisse euismod rhoncus mauris. Duis convallis ante sit amet nisi pharetra "
+"accumsan. Cras at nisi ornare, posuere lectus ac."
+msgstr ""
+
+msgctxt "values_slide_items.4717440a-691b-457f-b6b9-2cb38505956c.title"
+msgid "Expertice"
+msgstr ""
+
+msgctxt "values_slide_items.4717440a-691b-457f-b6b9-2cb38505956c.description"
+msgid ""
+"(en) orem ipsum dolor sit amet, consectetur adipiscing elit. Quisque quis imperdiet quam. Sed at sodales justo. Suspendisse euismod rhoncus mauris. Duis convallis ante sit amet nisi pharetra "
+"accumsan. Cras at nisi ornare, posuere lectus ac."
+msgstr ""
+
+msgctxt "values_slide_items.6ebe61a0-0c23-4ee8-a0c4-201f6f04484a.title"
+msgid "Innovation"
+msgstr ""
+
+msgctxt "values_slide_items.6ebe61a0-0c23-4ee8-a0c4-201f6f04484a.description"
+msgid ""
+"(en) Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque quis imperdiet quam. Sed at sodales justo. Suspendisse euismod rhoncus mauris. Duis convallis ante sit amet nisi pharetra "
+"accumsan. Cras at nisi ornare, posuere lectus ac."
+msgstr ""

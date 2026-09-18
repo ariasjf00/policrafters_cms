@@ -6,12 +6,23 @@ from wagtail.admin import urls as wagtailadmin_urls
 from wagtail import urls as wagtail_urls
 from wagtail.documents import urls as wagtaildocs_urls
 
+from catalogs_cms.api import catalogs_index_api
+from contact_cms.api import contact_page_api
+from home.api import home_page_api
 from search import views as search_views
 
 urlpatterns = [
     path("django-admin/", admin.site.urls),
     path("admin/", include(wagtailadmin_urls)),
     path("documents/", include(wagtaildocs_urls)),
+    path("api/home", home_page_api, name="home_page_api"),
+    path("api/home/", home_page_api),
+    path("api/catalogs", catalogs_index_api, name="catalogs_index_api"),
+    path("api/catalogs/", catalogs_index_api),
+    path("api/contact-page", contact_page_api, name="contact_page_api"),
+    path("api/contact-page/", contact_page_api),
+    path("api/contact-us", contact_page_api),
+    path("api/contact-us/", contact_page_api),
     path("search/", search_views.search, name="search"),
 ]
 

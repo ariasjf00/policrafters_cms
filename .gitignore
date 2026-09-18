@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 .env
 .env.local
+.env.production
 db.sqlite3
 *.log
 .vscode/
