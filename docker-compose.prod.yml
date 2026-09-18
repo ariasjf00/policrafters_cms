@@ -43,12 +43,9 @@ services:
 
     command: >
       sh -c "python manage.py migrate --noinput &&
-             python manage.py collectstatic --noinput &&
-             gunicorn policrafters_cms.wsgi:application
-             --bind 0.0.0.0:8000
-             --workers 3
-             --timeout 120"
-
+            python manage.py collectstatic --noinput &&
+            gunicorn policrafters_cms.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"  
+    
     depends_on:
       db:
         condition: service_healthy
