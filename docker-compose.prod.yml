@@ -3,26 +3,19 @@ services:
     image: postgres:16
     container_name: policrafters_cms_db
     restart: unless-stopped
-
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-
     volumes:
       - policrafters_cms_postgres_data:/var/lib/postgresql/data
-
-    # Solo para administración desde el VPS o mediante túnel SSH.
-    # PostgreSQL NO queda publicado hacia Internet.
     ports:
       - "127.0.0.1:5434:5432"
-
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
-
     networks:
       - policrafters_cms_network
 
@@ -30,35 +23,54 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-
     container_name: policrafters_cms
     restart: unless-stopped
-
     env_file:
       - .env.production
-
     environment:
       DJANGO_SETTINGS_MODULE: policrafters_cms.settings.production
       PORT: 8000
-
     command: >
       sh -c "python manage.py migrate --noinput &&
-            python manage.py collectstatic --noinput &&
-            gunicorn policrafters_cms.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"  
-    
+             python manage.py collectstatic --noinput &&
+             gunicorn policrafters_cms.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"
     depends_on:
       db:
         condition: service_healthy
-
     ports:
       - "127.0.0.1:8000:8000"
-
     volumes:
       - static_data:/app/static
       - media_data:/app/media
-
     networks:
       - policrafters_cms_network
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.policrafters-cms.rule=Host(`astro.novatierra.cloud`) && (PathPrefix(`/admin`) || PathPrefix(`/django-admin`) || PathPrefix(`/api`) || PathPrefix(`/documents`) || PathPrefix(`/search`))"
+      - "traefik.http.routers.policrafters-cms.entrypoints=websecure"
+      - "traefik.http.routers.policrafters-cms.tls=true"
+      - "traefik.http.routers.policrafters-cms.tls.certresolver=mytlschallenge"
+      - "traefik.http.services.policrafters-cms.loadbalancer.server.port=8000"
+
+  assets:
+    image: nginx:alpine
+    container_name: policrafters_cms_assets
+    restart: unless-stopped
+    volumes:
+      - static_data:/usr/share/nginx/html/static:ro
+      - media_data:/usr/share/nginx/html/media:ro
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.policrafters-cms-assets.rule=Host(`astro.novatierra.cloud`) && (PathPrefix(`/static`) || PathPrefix(`/media`))"
+      - "traefik.http.routers.policrafters-cms-assets.entrypoints=websecure"
+      - "traefik.http.routers.policrafters-cms-assets.tls=true"
+      - "traefik.http.routers.policrafters-cms-assets.tls.certresolver=mytlschallenge"
+      - "traefik.http.services.policrafters-cms-assets.loadbalancer.server.port=80"
 
 volumes:
   policrafters_cms_postgres_data:
@@ -68,3 +80,6 @@ volumes:
 networks:
   policrafters_cms_network:
     driver: bridge
+
+  traefik_proxy:
+    external: true
