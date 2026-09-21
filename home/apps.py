@@ -7,3 +7,4 @@ class HomeConfig(AppConfig):
 
     def ready(self):
         from . import wagtail_hooks  # noqa: F401
+        from . import signals  # noqa: F401
