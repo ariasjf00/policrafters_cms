@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.shortcuts import render
 from modelcluster.fields import ParentalKey
 from wagtail.admin.panels import FieldPanel, InlinePanel, MultiFieldPanel
 from wagtail.models import Orderable
@@ -64,6 +64,45 @@ class HomePage(Page):
         on_delete=models.SET_NULL,
         related_name="+",
     )
+
+    def serve_preview(self, request, mode_name):
+        from home.api import serialize_home_page
+
+        lang = getattr(
+            getattr(self, "locale", None),
+            "language_code",
+            "en",
+        )
+
+        # DEBUG TEMPORAL
+        print("\n===== WAGTAIL PREVIEW DEBUG =====")
+        print("PAGE:", self.pk)
+        print("TEAM:", self.team_members_items.count())
+        print("PROJECTS:", self.featured_projects_items.count())
+
+        for item in self.featured_projects_items.all():
+            print(
+                "PROJECT:",
+                item.pk,
+                getattr(item, "title", None),
+            )
+
+        print("===============================\n")
+
+        data = serialize_home_page(
+            self,
+            request,
+            lang,
+        )
+
+        return render(
+            request,
+            "home/astro_preview.html",
+            {
+                "preview_data": data,
+                "preview_lang": lang,
+            },
+        )
 
     content_panels = Page.content_panels + [
         MultiFieldPanel(

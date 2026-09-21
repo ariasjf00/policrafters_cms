@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="{{ preview_lang }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Policrafters Preview</title>
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #astro-preview {
+            border: 0;
+            width: 100%;
+            height: 100vh;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+
+<iframe
+    id="astro-preview"
+    src="http://localhost:4321/?lang={{ preview_lang }}"
+></iframe>
+
+{{ preview_data|json_script:"wagtail-preview-data" }}
+
+<script>
+    const iframe = document.getElementById("astro-preview");
+    const previewData = JSON.parse(
+        document.getElementById("wagtail-preview-data").textContent
+    );
+
+    iframe.addEventListener("load", () => {
+        iframe.contentWindow.postMessage(
+            {
+                type: "policrafters-preview",
+                payload: previewData
+            },
+            "http://localhost:4321"
+        );
+    });
+</script>
+
+</body>
+</html>

@@ -449,7 +449,7 @@ def _get_page_for_api(request):
 
     page = max(candidates, key=_home_page_priority)
 
-    latest_revision = page.get_latest_revision()
+    """ latest_revision = page.get_latest_revision()
     if latest_revision is not None:
         revision_page = latest_revision.as_object()
         if revision_page is not None:
@@ -465,71 +465,145 @@ def _get_page_for_api(request):
                 return _merge_revision_overrides(page, revision_page)
 
             if _home_page_has_content(revision_page):
-                return _merge_revision_overrides(page, revision_page)
+                return _merge_revision_overrides(page, revision_page) """
 
     return page
 
 
-def home_page_api(request):
-    requested_lang = _resolve_language(request)
-    page = _get_page_for_api(request)
-    if page is None:
-        return JsonResponse({"type": "home_cms.HomePage", "title": "", "locale": "en", "meta": {"seo_title": "", "search_description": ""}, "fields": {"copy": _get_home_copy(HomePage(), "en"), "hero_video_horizontal": None, "hero_video_vertical": None, "hero_image_horizontal": {"url": "", "alt": ""}, "hero_image_vertical": {"url": "", "alt": ""}, "site_logo": {"url": "", "alt": ""}, "featured_projects": [], "team_members": [], "values_slides": [], "contact_links": []}})
+def serialize_home_page(page, request, requested_lang=None):
+    """
+    Serializa una instancia de HomePage usando el mismo contrato
+    consumido por el frontend Astro.
 
-    response_locale = _normalize_locale_code(getattr(getattr(page, "locale", None), "language_code", requested_lang))
+    Puede recibir tanto una página publicada como una instancia
+    temporal utilizada por Wagtail Preview.
+    """
+    requested_lang = requested_lang or _resolve_language(request)
 
-    hero_video_horizontal = getattr(page, "hero_video_horizontal", None) or getattr(page, "hero_video_url", None) or None
-    hero_video_vertical = getattr(page, "hero_video_vertical", None) or getattr(page, "hero_video_url", None) or None
-    hero_image_horizontal = getattr(page, "hero_image_horizontal", None) or getattr(page, "hero_image_fallback", None)
-    hero_image_vertical = getattr(page, "hero_image_vertical", None) or getattr(page, "hero_image_fallback", None)
+    response_locale = _normalize_locale_code(
+        getattr(
+            getattr(page, "locale", None),
+            "language_code",
+            requested_lang,
+        )
+    )
+
+    hero_video_horizontal = (
+        getattr(page, "hero_video_horizontal", None)
+        or getattr(page, "hero_video_url", None)
+        or None
+    )
+    hero_video_vertical = (
+        getattr(page, "hero_video_vertical", None)
+        or getattr(page, "hero_video_url", None)
+        or None
+    )
+
+    hero_image_horizontal = (
+        getattr(page, "hero_image_horizontal", None)
+        or getattr(page, "hero_image_fallback", None)
+    )
+    hero_image_vertical = (
+        getattr(page, "hero_image_vertical", None)
+        or getattr(page, "hero_image_fallback", None)
+    )
+
     site_logo = getattr(page, "site_logo", None)
 
     project_items = getattr(page, "featured_projects_items", None)
     if project_items is not None and hasattr(project_items, "all"):
-        featured_projects = _get_related_items_payload(project_items.all(), lambda item: {
-            "title": item.title or "",
-            "slug": item.slug or "",
-            "thumbnail": _get_image_payload(getattr(item, "thumbnail", None), request),
-            "description": item.description or "",
-        })
+        featured_projects = _get_related_items_payload(
+            project_items.all(),
+            lambda item: {
+                "title": item.title or "",
+                "slug": item.slug or "",
+                "thumbnail": _get_image_payload(
+                    getattr(item, "thumbnail", None),
+                    request,
+                ),
+                "description": item.description or "",
+            },
+        )
     else:
-        featured_projects = _get_legacy_featured_projects(page, response_locale, request)
+        featured_projects = _get_legacy_featured_projects(
+            page,
+            response_locale,
+            request,
+        )
 
     team_items = getattr(page, "team_members_items", None)
     if team_items is not None and hasattr(team_items, "all"):
-        team_members = _get_related_items_payload(team_items.all(), lambda item: {
-            "name": item.name or "",
-            "role": item.role or "",
-            "photo": _get_image_payload(getattr(item, "photo", None), request),
-            "bio": item.bio or "",
-        })
+        team_members = _get_related_items_payload(
+            team_items.all(),
+            lambda item: {
+                "name": item.name or "",
+                "role": item.role or "",
+                "photo": _get_image_payload(
+                    getattr(item, "photo", None),
+                    request,
+                ),
+                "bio": item.bio or "",
+            },
+        )
     else:
-        team_members = _get_legacy_team_members(page, response_locale, request)
+        team_members = _get_legacy_team_members(
+            page,
+            response_locale,
+            request,
+        )
 
     values_items = getattr(page, "values_slide_items", None)
     if values_items is not None and hasattr(values_items, "all"):
-        values_slides = _get_related_items_payload(values_items.all(), lambda item: {
-            "title": item.title or "",
-            "image": _get_image_payload(getattr(item, "image", None), request),
-            "description": item.description or "",
-        })
+        values_slides = _get_related_items_payload(
+            values_items.all(),
+            lambda item: {
+                "title": item.title or "",
+                "image": _get_image_payload(
+                    getattr(item, "image", None),
+                    request,
+                ),
+                "description": item.description or "",
+            },
+        )
     else:
-        values_slides = _get_legacy_values_slides(page, response_locale, request)
+        values_slides = _get_legacy_values_slides(
+            page,
+            response_locale,
+            request,
+        )
 
     contact_items = getattr(page, "contact_link_items", None)
     if contact_items is not None and hasattr(contact_items, "all"):
-        contact_links = _get_related_items_payload(contact_items.all(), lambda item: {
-            "title": item.title or "",
-            "description": item.description or "",
-            "url": item.url or "",
-        })
+        contact_links = _get_related_items_payload(
+            contact_items.all(),
+            lambda item: {
+                "title": item.title or "",
+                "description": item.description or "",
+                "url": item.url or "",
+            },
+        )
     else:
-        contact_links = _get_legacy_contact_links(page, response_locale)
+        contact_links = _get_legacy_contact_links(
+            page,
+            response_locale,
+        )
 
-    seo_title = _normalize_copy_text(getattr(page, "seo_title", "")) or _normalize_copy_text(getattr(page, "title", ""))
-    search_description = _normalize_copy_text(getattr(page, "search_description", "")) or _normalize_copy_text(_get_home_copy(page, response_locale).get("hero_heading", ""))
+    seo_title = (
+        _normalize_copy_text(getattr(page, "seo_title", ""))
+        or _normalize_copy_text(getattr(page, "title", ""))
+    )
 
-    data = {
+    search_description = (
+        _normalize_copy_text(getattr(page, "search_description", ""))
+        or _normalize_copy_text(
+            _get_home_copy(page, response_locale).get(
+                "hero_heading",
+                "",
+            )
+        )
+    )
+
+    return {
         "type": "home_cms.HomePage",
         "title": page.title,
         "locale": response_locale,
@@ -541,14 +615,66 @@ def home_page_api(request):
             "copy": _get_home_copy(page, response_locale),
             "hero_video_horizontal": hero_video_horizontal,
             "hero_video_vertical": hero_video_vertical,
-            "hero_image_horizontal": _get_image_payload(hero_image_horizontal, request),
-            "hero_image_vertical": _get_image_payload(hero_image_vertical, request),
-            "site_logo": _get_image_payload(site_logo, request),
+            "hero_image_horizontal": _get_image_payload(
+                hero_image_horizontal,
+                request,
+            ),
+            "hero_image_vertical": _get_image_payload(
+                hero_image_vertical,
+                request,
+            ),
+            "site_logo": _get_image_payload(
+                site_logo,
+                request,
+            ),
             "featured_projects": featured_projects,
             "team_members": team_members,
             "values_slides": values_slides,
             "contact_links": contact_links,
         },
     }
+
+
+def home_page_api(request):
+    requested_lang = _resolve_language(request)
+    page = _get_page_for_api(request)
+
+    if page is None:
+        return JsonResponse({
+            "type": "home_cms.HomePage",
+            "title": "",
+            "locale": "en",
+            "meta": {
+                "seo_title": "",
+                "search_description": "",
+            },
+            "fields": {
+                "copy": _get_home_copy(HomePage(), "en"),
+                "hero_video_horizontal": None,
+                "hero_video_vertical": None,
+                "hero_image_horizontal": {
+                    "url": "",
+                    "alt": "",
+                },
+                "hero_image_vertical": {
+                    "url": "",
+                    "alt": "",
+                },
+                "site_logo": {
+                    "url": "",
+                    "alt": "",
+                },
+                "featured_projects": [],
+                "team_members": [],
+                "values_slides": [],
+                "contact_links": [],
+            },
+        })
+
+    data = serialize_home_page(
+        page,
+        request,
+        requested_lang,
+    )
 
     return JsonResponse(data)
