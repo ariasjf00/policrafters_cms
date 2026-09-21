@@ -221,6 +221,10 @@ STORAGES = {
 # can exceed this limit within Wagtail's page editor.
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10_000
 
+ASTRO_PREVIEW_URL = os.environ.get(
+    "ASTRO_PREVIEW_URL",
+    "http://localhost:4321",
+).rstrip("/")
 
 # Wagtail settings
 

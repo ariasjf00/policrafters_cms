@@ -1,5 +1,6 @@
 from django.db import models
 from django.shortcuts import render
+from django.conf import settings
 from modelcluster.fields import ParentalKey
 from wagtail.admin.panels import FieldPanel, InlinePanel, MultiFieldPanel
 from wagtail.models import Orderable
@@ -101,6 +102,7 @@ class HomePage(Page):
             {
                 "preview_data": data,
                 "preview_lang": lang,
+                "astro_preview_url": settings.ASTRO_PREVIEW_URL,
             },
         )
 

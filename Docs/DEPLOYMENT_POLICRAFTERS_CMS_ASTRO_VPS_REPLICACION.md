@@ -1129,3 +1129,122 @@ PostgreSQL 16
 Con esto queda reproducida la instalación funcional actual. El único
 paso de infraestructura funcional pendiente es automatizar el
 rebuild/deploy de Astro después de un **Publish** en Wagtail.
+
+## 27. Actualizacion del cms
+1. Entrar al VPS y ubicarse en el CMS
+cd /var/www/policrafters_cms
+
+Antes de actualizar, verifica que no existan modificaciones hechas directamente en producción:
+
+git status
+
+Lo ideal es que aparezca algo equivalente a:
+
+On branch main
+Your branch is up to date with 'origin/main'.
+
+nothing to commit, working tree clean
+
+El manual establece precisamente que el flujo debe ser desarrollo local → GitHub → VPS, evitando cambios permanentes directamente en producción.
+
+2. Confirmar que estás en main
+git branch --show-current
+
+Debe responder:
+
+main
+
+La rama definida en el manual para producción es main.
+
+3. Descargar la nueva versión
+git pull origin main
+
+Aquí ya queda actualizado el código fuente en:
+
+/var/www/policrafters_cms
+
+Pero todavía no has actualizado el contenedor que está ejecutándose.
+
+4. Reconstruir y actualizar los contenedores
+
+Ejecuta exactamente:
+
+docker compose \
+  -f docker-compose.prod.yml \
+  --env-file .env.production \
+  up -d --build
+Además, no necesitas ejecutar manualmente migrate ni collectstatic, porque el docker-compose.prod.yml ya arranca el CMS con:
+
+python manage.py migrate --noinput &&
+python manage.py collectstatic --noinput &&
+gunicorn policrafters_cms.wsgi:application ...
+
+Por eso las nuevas migraciones y los archivos estáticos se procesan automáticamente durante el arranque.
+
+5. Verificar los contenedores
+
+Después de la reconstrucción:
+
+docker compose \
+  -f docker-compose.prod.yml \
+  --env-file .env.production \
+  ps
+
+Deberías tener funcionando:
+
+policrafters_cms
+policrafters_cms_db
+policrafters_cms_assets
+
+Esos son los tres servicios previstos por la instalación.
+
+6. Revisar los logs del CMS
+docker logs --tail 100 policrafters_cms
+
+Aquí debes comprobar especialmente que no existan errores de:
+
+migrate
+collectstatic
+gunicorn
+ModuleNotFoundError
+database connection
+
+El manual recomienda precisamente revisar estos logs después de actualizar.
+
+7. Verificar que Wagtail siga respondiendo
+
+Puedes comprobarlo directamente:
+
+curl -I https://astro.novatierra.cloud/admin/
+
+Y la API:
+
+curl -I https://astro.novatierra.cloud/api/home/
+
+Los resultados esperados son que /admin/ redirija al login de Wagtail y /api/home/ responda correctamente.
+
+Por tanto, para una actualización normal del código del CMS, tu rutina práctica se reduce a:
+
+cd /var/www/policrafters_cms
+
+git status
+git branch --show-current
+git pull origin main
+
+docker compose \
+  -f docker-compose.prod.yml \
+  --env-file .env.production \
+  up -d --build
+
+docker compose \
+  -f docker-compose.prod.yml \
+  --env-file .env.production \
+  ps
+
+docker logs --tail 100 policrafters_cms
+
+Hay algo importante: no debes ejecutar docker compose down -v. El manual advierte que -v puede eliminar los volúmenes persistentes, incluyendo la base de datos PostgreSQL.
+
+Y tampoco tienes que tocar .env.production: ese archivo permanece en el VPS y no se trae de GitHub porque contiene los secretos de producción.
+
+En resumen: para los cambios que estás haciendo ahora en policrafters_cms, una vez que estén en main de GitHub, el ciclo es git pull → docker compose up -d --build → verificar ps → revisar logs. La base de datos y los media existentes se conservan porque están en volúmenes persistentes.
