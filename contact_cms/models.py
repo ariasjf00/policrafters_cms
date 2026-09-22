@@ -10,6 +10,7 @@ class ContactPage(Page):
     intro = models.TextField(blank=True)
     phone_label = models.CharField(max_length=120, blank=True)
     email_label = models.CharField(max_length=120, blank=True)
+    project_button_label = models.CharField(max_length=120, blank=True)
     locations_heading = models.CharField(max_length=255, blank=True)
     locations_aria = models.CharField(max_length=255, blank=True)
     learn_more = models.CharField(max_length=120, blank=True)
@@ -17,6 +18,7 @@ class ContactPage(Page):
     phone_display = models.CharField(max_length=120, blank=True)
     phone_href = models.CharField(max_length=120, blank=True)
     email = models.EmailField(blank=True)
+    url_contact = models.URLField(blank=True)
 
     content_panels = Page.content_panels + [
         MultiFieldPanel(
@@ -25,6 +27,7 @@ class ContactPage(Page):
                 FieldPanel("intro"),
                 FieldPanel("phone_label"),
                 FieldPanel("email_label"),
+                FieldPanel("project_button_label"),
                 FieldPanel("locations_heading"),
                 FieldPanel("locations_aria"),
                 FieldPanel("learn_more"),
@@ -36,6 +39,7 @@ class ContactPage(Page):
                 FieldPanel("phone_display"),
                 FieldPanel("phone_href"),
                 FieldPanel("email"),
+                FieldPanel("url_contact"),
             ],
             heading="Contact",
         ),
