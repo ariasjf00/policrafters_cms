@@ -9,8 +9,18 @@ from wagtail.models import TranslatableMixin
 
 
 class HomePage(Page):
-    hero_video_horizontal = models.URLField(blank=True)
-    hero_video_vertical = models.URLField(blank=True)
+    hero_video_horizontal = models.FileField(
+        upload_to="videos/home/",
+        blank=True,
+        null=True,
+        help_text="Video horizontal del hero.",
+    )
+    hero_video_vertical = models.FileField(
+        upload_to="videos/home/",
+        blank=True,
+        null=True,
+        help_text="Video vertical del hero.",
+    )
 
     hero_eyebrow = models.CharField(max_length=255, blank=True)
     hero_heading = models.CharField(max_length=255, blank=True)

@@ -1,5 +1,7 @@
-from home.models import HomePage
+from home.models import HomeContactLinkItem, HomePage
+from shared_cms.models import DirectContactBlock, DirectContactLinkItem
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import RequestFactory, SimpleTestCase, TestCase
 from django.utils import translation
 from wagtail.admin.views.pages.edit import EditView
@@ -181,3 +183,110 @@ class HomeApiTests(WagtailPageTestCase):
         self.assertNotIn("catalogs_prev_aria", copy_data)
         self.assertNotIn("catalogs_next_aria", copy_data)
         self.assertNotIn("catalogs_dot_aria", copy_data)
+
+    def test_home_api_does_not_include_contact_links(self):
+        response = self.client.get("/api/home?lang=en")
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        self.assertNotIn("contact_links", data["fields"])
+
+    def test_home_api_returns_uploaded_video_urls_from_media(self):
+        self.homepage.hero_video_horizontal = SimpleUploadedFile(
+            "hero-horizontal.mp4",
+            b"video-data-horizontal",
+            content_type="video/mp4",
+        )
+        self.homepage.hero_video_vertical = SimpleUploadedFile(
+            "hero-vertical.mp4",
+            b"video-data-vertical",
+            content_type="video/mp4",
+        )
+        self.homepage.save()
+
+        response = self.client.get("/api/home?lang=en")
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        self.assertIn("/media/videos/home/hero-horizontal", data["fields"]["hero_video_horizontal"])
+        self.assertIn("/media/videos/home/hero-vertical", data["fields"]["hero_video_vertical"])
+
+
+class DirectContactApiTests(WagtailPageTestCase):
+    def setUp(self):
+        root_page = Page.get_first_root_node()
+        Site.objects.update_or_create(
+            hostname="testsite",
+            defaults={"root_page": root_page, "is_default_site": True},
+        )
+
+        self.homepage = HomePage(
+            title="Home",
+            hero_heading="Home heading",
+            contact_heading="Get in touch",
+            contact_cta="Contact us",
+        )
+        root_page.add_child(instance=self.homepage)
+
+        HomeContactLinkItem.objects.create(
+            page=self.homepage,
+            locale=self.homepage.locale,
+            title="Whatsapp",
+            description="Chat with our team",
+            url="https://wa.me/123456789",
+        )
+
+    def test_direct_contact_api_returns_contract_shape(self):
+        response = self.client.get("/api/direct-contact?lang=en")
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        self.assertEqual(data["type"], "shared_cms.DirectContactBlock")
+        self.assertIn("fields", data)
+        self.assertIn("copy", data["fields"])
+        self.assertIn("contact_links", data["fields"])
+
+        self.assertEqual(data["fields"]["copy"]["contact_heading"], "Get in touch")
+        self.assertEqual(data["fields"]["copy"]["contact_cta"], "Contact us")
+        self.assertGreaterEqual(len(data["fields"]["contact_links"]), 1)
+
+    def test_direct_contact_api_defaults_to_english_when_lang_invalid(self):
+        response = self.client.get("/api/direct-contact?lang=pt")
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        self.assertEqual(data["locale"], "en")
+
+    def test_direct_contact_api_prefers_snippet_when_available(self):
+        block = DirectContactBlock.objects.create(
+            locale=self.homepage.locale,
+            title="Global direct contact",
+            contact_heading="Snippet heading",
+            contact_cta="Snippet CTA",
+        )
+        DirectContactLinkItem.objects.create(
+            block=block,
+            locale=self.homepage.locale,
+            sort_order=2,
+            title="Email",
+            description="Write us",
+            url="mailto:info@policrafters.com",
+        )
+        DirectContactLinkItem.objects.create(
+            block=block,
+            locale=self.homepage.locale,
+            sort_order=1,
+            title="Phone",
+            description="Call us",
+            url="tel:+18001112222",
+        )
+
+        response = self.client.get("/api/direct-contact?lang=en")
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        self.assertEqual(data["title"], "Global direct contact")
+        self.assertEqual(data["fields"]["copy"]["contact_heading"], "Snippet heading")
+        self.assertEqual(data["fields"]["copy"]["contact_cta"], "Snippet CTA")
+        self.assertEqual(data["fields"]["contact_links"][0]["title"], "Phone")
+        self.assertEqual(data["fields"]["contact_links"][1]["title"], "Email")

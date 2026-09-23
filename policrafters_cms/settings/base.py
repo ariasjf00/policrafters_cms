@@ -50,7 +50,9 @@ def env(name, default=None, cast=str):
 INSTALLED_APPS = [
     "home",
     "catalogs_cms",
+    "collections_page",
     "contact_cms",
+    "shared_cms",
     "search",
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",

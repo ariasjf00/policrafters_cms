@@ -7,8 +7,9 @@ from wagtail import urls as wagtail_urls
 from wagtail.documents import urls as wagtaildocs_urls
 
 from catalogs_cms.api import catalogs_index_api
+from collections_page.api import collections_index_api
 from contact_cms.api import contact_page_api
-from home.api import home_page_api
+from home.api import direct_contact_api, home_page_api
 from search import views as search_views
 
 urlpatterns = [
@@ -17,8 +18,14 @@ urlpatterns = [
     path("documents/", include(wagtaildocs_urls)),
     path("api/home", home_page_api, name="home_page_api"),
     path("api/home/", home_page_api),
+    path("api/direct-contact", direct_contact_api, name="direct_contact_api"),
+    path("api/direct-contact/", direct_contact_api),
     path("api/catalogs", catalogs_index_api, name="catalogs_index_api"),
     path("api/catalogs/", catalogs_index_api),
+    path("api/collections", collections_index_api, name="collections_index_api"),
+    path("api/collections/", collections_index_api),
+    path("api/collections-page", collections_index_api),
+    path("api/collections-page/", collections_index_api),
     path("api/contact-page", contact_page_api, name="contact_page_api"),
     path("api/contact-page/", contact_page_api),
     path("api/contact-us", contact_page_api),

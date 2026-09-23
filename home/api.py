@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404
 import re
 
 from home.models import HomePage
+from shared_cms.models import DirectContactBlock
 from wagtail.models import Site
 
 
@@ -347,6 +348,8 @@ def _home_page_has_content(page):
         "hero_subheading",
         "cta_heading",
         "cta_button_text",
+        "contact_heading",
+        "contact_cta",
         "intro_text",
         "home_copy",
     )
@@ -420,6 +423,27 @@ def _home_page_priority(page):
     return score
 
 
+def _direct_contact_page_priority(page):
+    if page is None:
+        return -1
+
+    links_count = 0
+    contact_items = getattr(page, "contact_link_items", None)
+    if contact_items is not None and hasattr(contact_items, "count"):
+        links_count = contact_items.count()
+
+    has_contact_copy = bool(
+        _normalize_copy_text(getattr(page, "contact_heading", ""))
+        or _normalize_copy_text(getattr(page, "contact_cta", ""))
+    )
+
+    score = _home_page_priority(page)
+    score += links_count * 10000
+    if has_contact_copy:
+        score += 1000
+    return score
+
+
 def _get_page_for_api(request):
     lang = _resolve_language(request)
     root_page = _get_site_root_page(request)
@@ -470,6 +494,64 @@ def _get_page_for_api(request):
     return page
 
 
+def _get_page_for_direct_contact_api(request):
+    lang = _resolve_language(request)
+    root_page = _get_site_root_page(request)
+
+    candidate_qs = HomePage.objects.select_related("locale").prefetch_related("contact_link_items")
+    global_qs = HomePage.objects.select_related("locale").prefetch_related("contact_link_items")
+    if root_page is not None:
+        candidate_qs = candidate_qs.child_of(root_page)
+
+    locale_candidates = candidate_qs.filter(locale__language_code=lang)
+    if not locale_candidates.exists():
+        locale_candidates = global_qs.filter(locale__language_code=lang)
+    if not locale_candidates.exists() and lang != "en":
+        locale_candidates = candidate_qs.filter(locale__language_code="en")
+    if not locale_candidates.exists():
+        locale_candidates = global_qs.filter(locale__language_code="en")
+    if not locale_candidates.exists():
+        locale_candidates = candidate_qs
+
+    candidates = list(locale_candidates)
+    if not candidates:
+        candidates = list(candidate_qs)
+
+    if not candidates:
+        return None
+
+    return max(candidates, key=_direct_contact_page_priority)
+
+
+def _get_direct_contact_block_for_api(request):
+    lang = _resolve_language(request)
+    candidate_qs = DirectContactBlock.objects.select_related("locale").prefetch_related("contact_link_items")
+
+    locale_candidates = candidate_qs.filter(locale__language_code=lang)
+    if not locale_candidates.exists() and lang != "en":
+        locale_candidates = candidate_qs.filter(locale__language_code="en")
+    if not locale_candidates.exists():
+        locale_candidates = candidate_qs
+
+    return locale_candidates.order_by("-pk").first()
+
+
+def _serialize_media_url(value, request=None):
+    if value in (None, ""):
+        return None
+
+    if hasattr(value, "url"):
+        url = value.url
+        if request is not None:
+            return request.build_absolute_uri(url)
+        return url
+
+    if isinstance(value, str):
+        return value
+
+    return None
+
+
 def serialize_home_page(page, request, requested_lang=None):
     """
     Serializa una instancia de HomePage usando el mismo contrato
@@ -488,15 +570,19 @@ def serialize_home_page(page, request, requested_lang=None):
         )
     )
 
-    hero_video_horizontal = (
-        getattr(page, "hero_video_horizontal", None)
-        or getattr(page, "hero_video_url", None)
-        or None
+    hero_video_horizontal = _serialize_media_url(
+        getattr(page, "hero_video_horizontal", None),
+        request,
+    ) or _serialize_media_url(
+        getattr(page, "hero_video_url", None),
+        request,
     )
-    hero_video_vertical = (
-        getattr(page, "hero_video_vertical", None)
-        or getattr(page, "hero_video_url", None)
-        or None
+    hero_video_vertical = _serialize_media_url(
+        getattr(page, "hero_video_vertical", None),
+        request,
+    ) or _serialize_media_url(
+        getattr(page, "hero_video_url", None),
+        request,
     )
 
     hero_image_horizontal = (
@@ -572,22 +658,6 @@ def serialize_home_page(page, request, requested_lang=None):
             request,
         )
 
-    contact_items = getattr(page, "contact_link_items", None)
-    if contact_items is not None and hasattr(contact_items, "all"):
-        contact_links = _get_related_items_payload(
-            contact_items.all(),
-            lambda item: {
-                "title": item.title or "",
-                "description": item.description or "",
-                "url": item.url or "",
-            },
-        )
-    else:
-        contact_links = _get_legacy_contact_links(
-            page,
-            response_locale,
-        )
-
     seo_title = (
         _normalize_copy_text(getattr(page, "seo_title", ""))
         or _normalize_copy_text(getattr(page, "title", ""))
@@ -630,7 +700,81 @@ def serialize_home_page(page, request, requested_lang=None):
             "featured_projects": featured_projects,
             "team_members": team_members,
             "values_slides": values_slides,
+        },
+    }
+
+
+def serialize_direct_contact_block(page, request, requested_lang=None):
+    requested_lang = requested_lang or _resolve_language(request)
+    response_locale = _normalize_locale_code(
+        getattr(
+            getattr(page, "locale", None),
+            "language_code",
+            requested_lang,
+        )
+    )
+
+    contact_items = getattr(page, "contact_link_items", None)
+    if contact_items is not None and hasattr(contact_items, "all"):
+        contact_links = _get_related_items_payload(
+            contact_items.all().order_by("sort_order", "pk"),
+            lambda item: {
+                "title": item.title or "",
+                "description": item.description or "",
+                "url": item.url or "",
+            },
+        )
+    else:
+        contact_links = _get_legacy_contact_links(
+            page,
+            response_locale,
+        )
+
+    copy_data = _get_home_copy(page, response_locale)
+
+    return {
+        "type": "shared_cms.DirectContactBlock",
+        "title": page.title,
+        "locale": response_locale,
+        "fields": {
+            "copy": {
+                "contact_heading": copy_data.get("contact_heading", ""),
+                "contact_cta": copy_data.get("contact_cta", ""),
+            },
             "contact_links": contact_links,
+        },
+    }
+
+
+def serialize_direct_contact_snippet(block, request, requested_lang=None):
+    requested_lang = requested_lang or _resolve_language(request)
+    response_locale = _normalize_locale_code(
+        getattr(
+            getattr(block, "locale", None),
+            "language_code",
+            requested_lang,
+        )
+    )
+
+    links = _get_related_items_payload(
+        block.contact_link_items.all().order_by("sort_order", "pk"),
+        lambda item: {
+            "title": item.title or "",
+            "description": item.description or "",
+            "url": item.url or "",
+        },
+    )
+
+    return {
+        "type": "shared_cms.DirectContactBlock",
+        "title": block.title,
+        "locale": response_locale,
+        "fields": {
+            "copy": {
+                "contact_heading": _normalize_copy_text(getattr(block, "contact_heading", "")),
+                "contact_cta": _normalize_copy_text(getattr(block, "contact_cta", "")),
+            },
+            "contact_links": links,
         },
     }
 
@@ -667,7 +811,6 @@ def home_page_api(request):
                 "featured_projects": [],
                 "team_members": [],
                 "values_slides": [],
-                "contact_links": [],
             },
         })
 
@@ -677,4 +820,41 @@ def home_page_api(request):
         requested_lang,
     )
 
+    return JsonResponse(data)
+
+
+def direct_contact_api(request):
+    requested_lang = _resolve_language(request)
+    block = _get_direct_contact_block_for_api(request)
+    if block is not None:
+        data = serialize_direct_contact_snippet(
+            block,
+            request,
+            requested_lang,
+        )
+        return JsonResponse(data)
+
+    page = _get_page_for_direct_contact_api(request)
+
+    if page is None:
+        return JsonResponse(
+            {
+                "type": "shared_cms.DirectContactBlock",
+                "title": "",
+                "locale": requested_lang,
+                "fields": {
+                    "copy": {
+                        "contact_heading": "",
+                        "contact_cta": "",
+                    },
+                    "contact_links": [],
+                },
+            }
+        )
+
+    data = serialize_direct_contact_block(
+        page,
+        request,
+        requested_lang,
+    )
     return JsonResponse(data)
