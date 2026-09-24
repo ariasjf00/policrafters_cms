@@ -159,6 +159,7 @@ class CollectionProductItem(TranslatableMixin, Orderable):
     product_heading = models.CharField(max_length=200, blank=True)
     intro_text_1 = models.TextField(blank=True)
     intro_text_2 = models.TextField(blank=True)
+    intro_text_product = models.TextField(blank=True)
     technical_eyebrow = models.CharField(max_length=120, blank=True)
     technical_image_product = models.ForeignKey(
         "wagtailimages.Image",
@@ -200,6 +201,7 @@ class CollectionProductItem(TranslatableMixin, Orderable):
         FieldPanel("product_heading"),
         FieldPanel("intro_text_1"),
         FieldPanel("intro_text_2"),
+        FieldPanel("intro_text_product"),
         FieldPanel("technical_eyebrow"),
         FieldPanel("technical_image_product"),
         FieldPanel("technical_image_dimensions"),

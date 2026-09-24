@@ -357,10 +357,17 @@ def serialize_collection_product(page, product, request):
             getattr(product, "image_alt", ""),
         ),
         "intro_text_2": _normalize_copy_text(getattr(product, "intro_text_2", "")),
+        "intro_text_product": _normalize_copy_text(
+            getattr(product, "intro_text_product", "")
+        ),
         "gallery_pair": gallery_pair,
         "product_eyebrow": _normalize_copy_text(getattr(product, "product_eyebrow", "")),
         "product_heading": _normalize_copy_text(getattr(product, "product_heading", "") or getattr(product, "title", "")),
-        "product_body": _normalize_copy_text(getattr(product, "intro_text_1", "") or getattr(product, "intro_text_2", "")),
+        "product_body": _normalize_copy_text(
+            getattr(product, "intro_text_product", "")
+            or getattr(product, "intro_text_1", "")
+            or getattr(product, "intro_text_2", "")
+        ),
         "technical_eyebrow": _normalize_copy_text(getattr(product, "technical_eyebrow", "")),
         "technical_image_product": _get_image_payload(
             getattr(product, "technical_image_product", None),
@@ -503,6 +510,7 @@ def product_detail_api(request):
                     "intro_text_1": "",
                     "secondary_image": {"url": "", "alt": ""},
                     "intro_text_2": "",
+                    "intro_text_product": "",
                     "gallery_pair": [],
                     "product_eyebrow": "",
                     "product_heading": "",

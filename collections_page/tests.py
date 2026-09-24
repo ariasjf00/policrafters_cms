@@ -161,6 +161,7 @@ class CollectionsApiTests(WagtailPageTestCase):
             product_heading="Model 1",
             intro_text_1="Intro paragraph one.",
             intro_text_2="Intro paragraph two.",
+            intro_text_product="Final product intro paragraph.",
             technical_eyebrow="Technical Information",
             download_heading="Downloads",
             back_to_menu_label="Back to products menu",
@@ -174,6 +175,7 @@ class CollectionsApiTests(WagtailPageTestCase):
         self.assertEqual(data["slug"], "shower-doors/fixed/model-1")
         self.assertEqual(data["fields"]["collection"]["slug"], "shower-doors")
         self.assertEqual(data["fields"]["product_heading"], "Model 1")
+        self.assertEqual(data["fields"]["intro_text_product"], "Final product intro paragraph.")
         self.assertEqual(data["fields"]["back_to_menu_label"], "Back to products menu")
 
     def test_product_detail_api_serializes_gallery_pair_from_image_fields(self):
