@@ -1,35 +1,26 @@
-from django.db import models
 from django.conf import settings
 from django.shortcuts import render
 
+from django.db import models
 from modelcluster.fields import ParentalKey
 from wagtail.admin.panels import FieldPanel, InlinePanel, MultiFieldPanel
 from wagtail.models import Orderable, Page, TranslatableMixin
 
 
-class CollectionIndexPage(Page):
+class RenovationIndexPage(Page):
     hero_title = models.CharField(max_length=255, blank=True)
     intro_text = models.TextField(blank=True)
     empty_state_text = models.CharField(max_length=255, blank=True)
 
     def serve_preview(self, request, mode_name):
-        from collections_page.api import serialize_collection_index_page
+        from renovations.api import serialize_renovation_index_page
 
-        lang = getattr(
-            getattr(self, "locale", None),
-            "language_code",
-            "en",
-        )
-
-        data = serialize_collection_index_page(
-            self,
-            request,
-            lang,
-        )
+        lang = getattr(getattr(self, "locale", None), "language_code", "en")
+        data = serialize_renovation_index_page(self, request, lang)
 
         return render(
             request,
-            "collections_page/astro_preview.html",
+            "renovations/astro_preview.html",
             {
                 "preview_data": data,
                 "preview_lang": lang,
@@ -45,7 +36,7 @@ class CollectionIndexPage(Page):
                 FieldPanel("empty_state_text"),
                 FieldPanel("search_description"),
             ],
-            heading="Collections copy",
+            heading="Renovations copy",
         ),
         InlinePanel("category_items", label="Categories"),
         InlinePanel("type_items", label="Types"),
@@ -53,14 +44,15 @@ class CollectionIndexPage(Page):
     ]
 
 
-class CollectionCategoryItem(TranslatableMixin, Orderable):
+class RenovationCategoryItem(TranslatableMixin, Orderable):
     page = ParentalKey(
-        "collections_page.CollectionIndexPage",
+        "renovations.RenovationIndexPage",
         related_name="category_items",
         on_delete=models.CASCADE,
     )
     key = models.SlugField(max_length=80)
     label = models.CharField(max_length=120)
+    show_type_filters = models.BooleanField(default=True)
 
     def clean(self):
         super().clean()
@@ -70,6 +62,7 @@ class CollectionCategoryItem(TranslatableMixin, Orderable):
     panels = [
         FieldPanel("key"),
         FieldPanel("label"),
+        FieldPanel("show_type_filters"),
     ]
 
     def __str__(self):
@@ -80,9 +73,9 @@ class CollectionCategoryItem(TranslatableMixin, Orderable):
         return label or key or f"Category #{self.pk}"
 
 
-class CollectionTypeItem(TranslatableMixin, Orderable):
+class RenovationTypeItem(TranslatableMixin, Orderable):
     page = ParentalKey(
-        "collections_page.CollectionIndexPage",
+        "renovations.RenovationIndexPage",
         related_name="type_items",
         on_delete=models.CASCADE,
     )
@@ -92,7 +85,6 @@ class CollectionTypeItem(TranslatableMixin, Orderable):
 
     def clean(self):
         super().clean()
-
         if self.locale_id is None and self.page_id:
             self.locale_id = self.page.locale_id
 
@@ -105,18 +97,14 @@ class CollectionTypeItem(TranslatableMixin, Orderable):
     def __str__(self):
         label = (self.label or "").strip()
         key = (self.key or "").strip()
-
-        base = ""
         if label and key:
-            base = f"{label} ({key})"
-        else:
-            base = label or key or f"Type #{self.pk}"
-        return base
+            return f"{label} ({key})"
+        return label or key or f"Type #{self.pk}"
 
 
-class CollectionProductItem(TranslatableMixin, Orderable):
+class RenovationProductItem(TranslatableMixin, Orderable):
     page = ParentalKey(
-        "collections_page.CollectionIndexPage",
+        "renovations.RenovationIndexPage",
         related_name="product_items",
         on_delete=models.CASCADE,
     )
@@ -132,55 +120,9 @@ class CollectionProductItem(TranslatableMixin, Orderable):
         related_name="+",
     )
     image_alt = models.CharField(max_length=255, blank=True)
-    secondary_image = models.ForeignKey(
-        "wagtailimages.Image",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="+",
-    )
-    gallery_image_1 = models.ForeignKey(
-        "wagtailimages.Image",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="+",
-    )
-    gallery_image_2 = models.ForeignKey(
-        "wagtailimages.Image",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="+",
-    )
-    gallery_image_1_alt = models.CharField(max_length=255, blank=True)
-    gallery_image_2_alt = models.CharField(max_length=255, blank=True)
-    product_eyebrow = models.CharField(max_length=120, blank=True)
-    product_heading = models.CharField(max_length=200, blank=True)
-    intro_text_1 = models.TextField(blank=True)
-    intro_text_2 = models.TextField(blank=True)
-    technical_eyebrow = models.CharField(max_length=120, blank=True)
-    technical_image_product = models.ForeignKey(
-        "wagtailimages.Image",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="+",
-    )
-    technical_image_dimensions = models.ForeignKey(
-        "wagtailimages.Image",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="+",
-    )
-    download_heading = models.CharField(max_length=120, blank=True)
-    download_links = models.JSONField(default=list, blank=True)
-    back_to_menu_label = models.CharField(max_length=200, blank=True)
 
     def clean(self):
         super().clean()
-
         if self.locale_id is None and self.page_id:
             self.locale_id = self.page.locale_id
 
@@ -191,19 +133,4 @@ class CollectionProductItem(TranslatableMixin, Orderable):
         FieldPanel("slug"),
         FieldPanel("image"),
         FieldPanel("image_alt"),
-        FieldPanel("secondary_image"),
-        FieldPanel("gallery_image_1"),
-        FieldPanel("gallery_image_2"),
-        FieldPanel("gallery_image_1_alt"),
-        FieldPanel("gallery_image_2_alt"),
-        FieldPanel("product_eyebrow"),
-        FieldPanel("product_heading"),
-        FieldPanel("intro_text_1"),
-        FieldPanel("intro_text_2"),
-        FieldPanel("technical_eyebrow"),
-        FieldPanel("technical_image_product"),
-        FieldPanel("technical_image_dimensions"),
-        FieldPanel("download_heading"),
-        FieldPanel("download_links"),
-        FieldPanel("back_to_menu_label"),
     ]

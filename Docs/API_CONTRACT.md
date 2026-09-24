@@ -225,10 +225,6 @@ Fuente única del bloque de contacto reutilizable que se renderiza al final de v
 
 Mocks: [src/mocks/direct-contact.en.json](../src/mocks/direct-contact.en.json) y [src/mocks/direct-contact.es.json](../src/mocks/direct-contact.es.json).
 
-Endpoint sugerido para este payload: `PUBLIC_DIRECT_CONTACT_API_URL`.
-
-Implementacion backend actual: `/api/direct-contact`.
-
 Nota para el backend: la respuesta debe venir ya localizada por idioma. Si el frontend pide inglés y español por separado, ambas respuestas deben mantener la misma forma para que el componente pueda cambiar de idioma sin recargar.
 
 ```json
@@ -326,6 +322,99 @@ Nota importante: igual que HomePage y ContactPage, la API devuelve un solo idiom
 - Esta página no incluye `contact_links`; el bloque de contacto directo vive en el contrato separado de DirectContact.
 - El frontend solicita `?lang=en` y `?lang=es` por separado para renderizar ambos idiomas con el mismo patrón que HomePage y ContactPage.
 
+## RenovationIndexPage
+
+Página de índice de renovaciones referenciada por [renovations.astro](../src/pages/renovations.astro). Sigue el mismo patrón que [CollectionIndexPage](#collectionindexpage): contrato propio, sin depender de HomePage, y renderiza el bloque compartido de [DirectContactBlock](#directcontactblock--contacto-directo-compartido) al final.
+
+Mocks de referencia: [src/mocks/renovations-page.en.json](../src/mocks/renovations-page.en.json) y [src/mocks/renovations-page.es.json](../src/mocks/renovations-page.es.json).
+
+Nota importante: igual que CollectionIndexPage, la API devuelve un solo idioma por request. El frontend pide `?lang=en` y `?lang=es` por separado para poder renderizar ambos idiomas en el markup sin mezclar campos bilingües en una sola respuesta.
+
+```json
+{
+  "type": "renovations.RenovationIndexPage",
+  "title": "string",
+  "locale": "en | es",
+  "meta": {
+    "seo_title": "string",
+    "search_description": "string"
+  },
+  "fields": {
+    "hero_title": "string",
+    "intro_text": "string",
+    "empty_state_text": "string",
+    "categories": [
+      {
+        "key": "string",
+        "label": "string",
+        "has_products": true,
+        "types": [
+          {
+            "key": "string",
+            "label": "string",
+            "products": [
+              {
+                "title": "string",
+                "slug": "string",
+                "image": {
+                  "url": "string",
+                  "alt": "string"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "string",
+        "label": "string",
+        "has_products": true,
+        "show_type_filters": false,
+        "types": [
+          {
+            "key": "string",
+            "label": "string",
+            "products": [
+              {
+                "title": "string",
+                "slug": "string",
+                "image": {
+                  "url": "string",
+                  "alt": "string"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "string",
+        "label": "string",
+        "has_products": false,
+        "types": [
+          {
+            "key": "string",
+            "label": "string",
+            "products": []
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Reglas de implementación
+
+- `categories` es dinámico y el frontend respeta el orden recibido.
+- El backend o mock devuelve `hero_title`, `intro_text`, `empty_state_text` y `categories` ya localizados para un solo idioma por respuesta.
+- Los productos de la categoría `commercial` se agrupan en la galería (2 columnas, imágenes en formato horizontal); `residential` es una sección informativa sin productos (`has_products: false`), igual que `storage-systems`/`complements` en CollectionIndexPage.
+- `show_type_filters` es un campo opcional por categoría, propio de este contrato (no existe en CollectionIndexPage). Con `has_products: true`, controla si la categoría renderiza checkboxes de tipo en el panel de filtros:
+  - Ausente o `true` (default): se renderiza la lista de tipos como checkboxes filtrables (comportamiento igual a `commercial`).
+  - `false`: la categoría no expone filtros por tipo — el panel se renderiza vacío — pero sus productos sí aparecen en la galería al expandirla. Así se modela `partners`, que tiene un solo grupo de productos sin sub-tipos.
+- Esta página no incluye `contact_links`; el bloque de contacto directo vive en el contrato separado de DirectContact.
+- El frontend solicita `?lang=en` y `?lang=es` por separado para renderizar ambos idiomas con el mismo patrón que HomePage, ContactPage y CollectionIndexPage.
+
 ## ModelPage
 
 Página de un modelo/producto individual dentro de una colección (referencia: falper.it).
@@ -372,6 +461,147 @@ Página de un modelo/producto individual dentro de una colección (referencia: f
   ]
 }
 ```
+
+### `/collections/product` — campos implementados
+
+[src/pages/collections/product.astro](../src/pages/collections/product.astro) implementa la
+página completa de un `ModelPage`: hero + dos imágenes de ancho completo intercaladas con
+texto + un par de imágenes + bloque de título; una sección de información técnica (eyebrow +
+encabezado — reutiliza `product_heading`, no un campo aparte — dos ilustraciones y una lista
+de enlaces de descarga); y un bloque de productos relacionados (título de la colección + botón
+de vuelta al menú + hasta 4 tarjetas), seguido del componente compartido `DirectContact` (ver
+[DirectContact.astro](../src/components/DirectContact.astro) y
+[direct-contact.ts](../src/lib/direct-contact.ts), que ya tienen su propio contrato vía el
+payload de home).
+
+A diferencia de `collections.astro`, este endpoint **sigue la regla general** del documento:
+un solo idioma ya resuelto por respuesta, sin pares `_en`. El frontend pide `?lang=en` y
+`?lang=es` por separado en build time y conserva ambos en el markup (el mismo patrón que
+`ContactPage` y `CatalogIndex` — ver [product-content.ts](../src/lib/product-content.ts)),
+en vez del convenio base-español + hermano `_en` que el bloque introductorio usó en un borrador
+anterior de este documento. Mocks de referencia:
+[src/mocks/product-page.en.json](../src/mocks/product-page.en.json) y
+[src/mocks/product-page.es.json](../src/mocks/product-page.es.json).
+
+#### Contrato de URL y búsqueda por producto real
+
+La ruta real del detalle no es una sola página fija llamada `/collections/product` para todos
+los productos. El frontend ahora soporta URLs dinámicas de la forma:
+
+```text
+/collections/<category>/<type>/<model>
+```
+
+Ejemplo:
+
+```text
+/collections/shower-doors/fixed/model-1
+/collections/shower-doors/pivot/model-1
+```
+
+La API debe resolver el producto por el slug completo, no por una sola página genérica. Es decir,
+el backend debe aceptar un filtro de `slug` y devolver solo el `ModelPage` correspondiente.
+
+```http
+GET /api/products?lang=en&slug=shower-doors/fixed/model-1
+```
+
+Respuesta esperada:
+
+```json
+{
+  "type": "collections.ModelPage",
+  "title": "Name of the Product",
+  "slug": "shower-doors/fixed/model-1",
+  "locale": "en",
+  "meta": {
+    "seo_title": "Product | Policrafters",
+    "search_description": "Discover Policrafters' fixed shower door model"
+  },
+  "fields": {
+    "collection": {
+      "name": "Shower Doors",
+      "slug": "shower-doors"
+    },
+    "product_heading": "NAME OF THE PRODUCT",
+    "hero_image": { "url": "/media/...jpg", "alt": "Fixed tempered-glass shower door" },
+    "intro_text_1": "...",
+    "secondary_image": { "url": "/media/...jpg", "alt": "..." },
+    "intro_text_2": "...",
+    "gallery_pair": [
+      { "url": "/media/...jpg", "alt": "..." },
+      { "url": "/media/...jpg", "alt": "..." }
+    ],
+    "technical_eyebrow": "Technical Information",
+    "technical_image_product": { "url": "/media/...svg", "alt": "..." },
+    "technical_image_dimensions": { "url": "/media/...svg", "alt": "..." },
+    "download_heading": "DOWNLOAD",
+    "download_links": [
+      { "label": "Technical Sheet PDF", "url": "/media/...pdf" }
+    ],
+    "related_models": [
+      {
+        "title": "Product 1",
+        "slug": "shower-doors/fixed/model-1",
+        "thumbnail": { "url": "/media/...jpg", "alt": "Fixed shower door" }
+      }
+    ],
+    "back_to_menu_label": "Back to products menu"
+  }
+}
+```
+
+Esto es importante porque la colección lista productos con `slug` completo, y la página de detalle
+**debe resolver exactamente ese producto**. No se puede devolver siempre el mismo payload de
+`/collections/product` para cada imagen clickeada.
+
+El resto del contrato de `ModelPage` (`specs`, `gallery`, `brand`, `breadcrumbs`) sigue
+pendiente de construirse en el frontend y no cambia. Estos campos se suman a `fields` arriba:
+
+```json
+{
+  "fields": {
+    "hero_image": { "url": "string", "alt": "string" },
+    "intro_text_1": "string",
+    "secondary_image": { "url": "string", "alt": "string" },
+    "intro_text_2": "string",
+    "gallery_pair": [
+      { "url": "string", "alt": "string" }
+    ],
+    "product_eyebrow": "string",
+    "product_heading": "string",
+    "product_body": "string",
+    "technical_eyebrow": "string",
+    "technical_image_product": { "url": "string", "alt": "string" },
+    "technical_image_dimensions": { "url": "string", "alt": "string" },
+    "download_heading": "string",
+    "download_links": [
+      { "label": "string", "url": "string" }
+    ],
+    "collection": { "name": "string", "slug": "string" },
+    "related_models": [
+      { "title": "string", "slug": "string", "thumbnail": { "url": "string", "alt": "string" } }
+    ],
+    "back_to_menu_label": "string"
+  }
+}
+```
+
+- `technical_image_product` y `technical_image_dimensions` son dos campos nombrados en
+  vez de un array, porque cada ilustración tiene un rol, proporción y ancho de columna
+  distintos en el layout — acceder por índice sería frágil.
+- `download_links[].url` es `"#"` en el mock; se espera que el backend lo alimente con
+  URLs reales de documentos de Wagtail (PDF, DWG, etc.). El array es dinámico y el
+  frontend renderiza el orden tal como llega, sin reordenar.
+- El frontend renderiza **como máximo 4** `related_models` (recorta el array si trae
+  más) — el backend no necesita limitarlo.
+- `back_to_menu_label` es el único campo sin equivalente previo en el contrato de
+  `ModelPage`; el resto (`collection`, `related_models`) ya estaba definido ahí.
+- `collection.slug` arma el enlace de vuelta como `/collections?category=<slug>`, por lo
+  que debe coincidir con un `key` de categoría del mock
+  [collections-page.json](../src/mocks/collections-page.json)
+  (`fields.categories[].key`, p. ej. `shower-doors`). `CollectionIndexPage` en sí sigue
+  pendiente de contrato formal — ver "Pendiente de definir" al final de este documento.
 
 ## ContactPage (contenido de página)
 

@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "home",
     "catalogs_cms",
     "collections_page",
+    "renovations",
     "contact_cms",
     "shared_cms",
     "search",

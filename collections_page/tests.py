@@ -1,3 +1,8 @@
+from io import BytesIO
+
+from PIL import Image
+from django.core.files.uploadedfile import SimpleUploadedFile
+
 from collections_page.models import (
     CollectionCategoryItem,
     CollectionIndexPage,
@@ -5,6 +10,7 @@ from collections_page.models import (
     CollectionTypeItem,
 )
 
+from wagtail.images import get_image_model
 from wagtail.models import Page, Site
 from wagtail.test.utils import WagtailPageTestCase
 
@@ -142,6 +148,69 @@ class CollectionsApiTests(WagtailPageTestCase):
         self.assertEqual(shower_doors["types"][0]["key"], "hinged")
         self.assertEqual(shower_doors["types"][1]["key"], "sliding")
         self.assertEqual(shower_doors["types"][0]["products"][0]["title"], "Alpha Hinge")
+
+    def test_product_detail_api_resolves_full_slug(self):
+        product = CollectionProductItem.objects.create(
+            page=self.collections_page,
+            category_key="shower-doors",
+            type_key="fixed",
+            title="Model 1",
+            slug="model-1",
+            image_alt="Model 1 image",
+            product_eyebrow="Featured",
+            product_heading="Model 1",
+            intro_text_1="Intro paragraph one.",
+            intro_text_2="Intro paragraph two.",
+            technical_eyebrow="Technical Information",
+            download_heading="Downloads",
+            back_to_menu_label="Back to products menu",
+        )
+
+        response = self.client.get("/api/products?lang=en&slug=shower-doors/fixed/model-1")
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        self.assertEqual(data["type"], "collections.ModelPage")
+        self.assertEqual(data["slug"], "shower-doors/fixed/model-1")
+        self.assertEqual(data["fields"]["collection"]["slug"], "shower-doors")
+        self.assertEqual(data["fields"]["product_heading"], "Model 1")
+        self.assertEqual(data["fields"]["back_to_menu_label"], "Back to products menu")
+
+    def test_product_detail_api_serializes_gallery_pair_from_image_fields(self):
+        buffer = BytesIO()
+        PILImage = Image
+        PILImage.new("RGB", (10, 10), color="white").save(buffer, format="PNG")
+        valid_png = buffer.getvalue()
+
+        WagtailImage = get_image_model()
+        image_1 = WagtailImage.objects.create(
+            title="Side view",
+            file=SimpleUploadedFile("side.png", valid_png, content_type="image/png"),
+        )
+        image_2 = WagtailImage.objects.create(
+            title="Bathroom view",
+            file=SimpleUploadedFile("bath.png", valid_png, content_type="image/png"),
+        )
+
+        product = CollectionProductItem.objects.create(
+            page=self.collections_page,
+            category_key="shower-doors",
+            type_key="fixed",
+            title="Model 1",
+            slug="shower-doors/fixed/model-1",
+            gallery_image_1=image_1,
+            gallery_image_2=image_2,
+            gallery_image_1_alt="Side view of the shower",
+            gallery_image_2_alt="Full bathroom with fixed shower door",
+        )
+
+        response = self.client.get("/api/products?lang=en&slug=shower-doors/fixed/model-1")
+        self.assertEqual(response.status_code, 200)
+
+        gallery_pair = response.json()["fields"]["gallery_pair"]
+        self.assertEqual(len(gallery_pair), 2)
+        self.assertEqual(gallery_pair[0]["alt"], "Side view of the shower")
+        self.assertEqual(gallery_pair[1]["alt"], "Full bathroom with fixed shower door")
 
 
 class CollectionsInlineLocaleTests(WagtailPageTestCase):
