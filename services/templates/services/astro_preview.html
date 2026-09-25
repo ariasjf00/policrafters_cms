@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="{{ preview_lang }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Policrafters Services Preview</title>
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #astro-preview {
+            border: 0;
+            width: 100%;
+            height: 100vh;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+
+<iframe
+    id="astro-preview"
+    src="{{ astro_preview_url }}/services/?lang={{ preview_lang }}"
+></iframe>
+
+{{ preview_data|json_script:"wagtail-preview-data" }}
+
+<script>
+    const iframe = document.getElementById("astro-preview");
+    const previewOrigin = new URL("{{ astro_preview_url }}", window.location.origin).origin;
+
+    const previewData = JSON.parse(
+        document.getElementById("wagtail-preview-data").textContent
+    );
+
+    const sendPreviewPayload = () => {
+        if (!iframe.contentWindow) {
+            return;
+        }
+
+        iframe.contentWindow.postMessage(
+            {
+                type: "policrafters-preview",
+                payload: previewData
+            },
+            previewOrigin
+        );
+    };
+
+    iframe.addEventListener("load", () => {
+        sendPreviewPayload();
+
+        // Keep sending for a short window so preview wins over late hydration/fetch cycles.
+        const retryDelays = [150, 400, 900, 1600];
+        retryDelays.forEach((delay) => {
+            window.setTimeout(sendPreviewPayload, delay);
+        });
+
+        // Keep syncing preview payload while editor tab is open, so slower
+        // or repeated frontend fetches do not replace unsaved preview data.
+        const retryTimer = window.setInterval(() => {
+            sendPreviewPayload();
+        }, 1000);
+
+        window.addEventListener("beforeunload", () => {
+            window.clearInterval(retryTimer);
+        });
+    });
+</script>
+
+</body>
+</html>
