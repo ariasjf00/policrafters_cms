@@ -131,43 +131,42 @@ def _get_copy(page):
     }
 
 
-def contact_page_api(request):
-    requested_lang = _resolve_language(request)
-    page = _get_page_for_api(request)
+def _empty_contact_page_payload(requested_lang):
+    return {
+        "type": "contact_cms.ContactPage",
+        "title": "",
+        "locale": requested_lang,
+        "meta": {
+            "seo_title": "",
+            "search_description": "",
+        },
+        "fields": {
+            "copy": {
+                "heading": "",
+                "intro": "",
+                "phone_label": "",
+                "email_label": "",
+                "project_button_label": "",
+                "locations_heading": "",
+                "locations_aria": "",
+                "learn_more": "",
+            },
+            "contact": {
+                "phone_display": "",
+                "phone_href": None,
+                "email": "",
+                "url_contact": "",
+            },
+            "locations": [],
+        },
+    }
 
-    if page is None:
-        return JsonResponse(
-            {
-                "type": "contact_cms.ContactPage",
-                "title": "",
-                "locale": requested_lang,
-                "meta": {
-                    "seo_title": "",
-                    "search_description": "",
-                },
-                "fields": {
-                    "copy": {
-                        "heading": "",
-                        "intro": "",
-                        "phone_label": "",
-                        "email_label": "",
-                        "project_button_label": "",
-                        "locations_heading": "",
-                        "locations_aria": "",
-                        "learn_more": "",
-                    },
-                    "contact": {
-                        "phone_display": "",
-                        "phone_href": None,
-                        "email": "",
-                        "url_contact": "",
-                    },
-                    "locations": [],
-                },
-            }
-        )
 
-    response_locale = _normalize_locale_code(getattr(getattr(page, "locale", None), "language_code", requested_lang))
+def serialize_contact_page(page, request, requested_lang=None):
+    requested_lang = requested_lang or _resolve_language(request)
+    response_locale = _normalize_locale_code(
+        getattr(getattr(page, "locale", None), "language_code", requested_lang)
+    )
 
     locations = []
     items = getattr(page, "location_items", None)
@@ -184,12 +183,16 @@ def contact_page_api(request):
                 }
             )
 
-    seo_title = _normalize_copy_text(getattr(page, "seo_title", "")) or _normalize_copy_text(getattr(page, "title", ""))
-    search_description = _normalize_copy_text(getattr(page, "search_description", "")) or _normalize_copy_text(getattr(page, "intro", ""))
+    seo_title = _normalize_copy_text(getattr(page, "seo_title", "")) or _normalize_copy_text(
+        getattr(page, "title", "")
+    )
+    search_description = _normalize_copy_text(
+        getattr(page, "search_description", "")
+    ) or _normalize_copy_text(getattr(page, "intro", ""))
 
-    data = {
+    return {
         "type": "contact_cms.ContactPage",
-        "title": page.title,
+        "title": _normalize_copy_text(getattr(page, "title", "")),
         "locale": response_locale,
         "meta": {
             "seo_title": seo_title,
@@ -206,4 +209,13 @@ def contact_page_api(request):
             "locations": locations,
         },
     }
-    return JsonResponse(data)
+
+
+def contact_page_api(request):
+    requested_lang = _resolve_language(request)
+    page = _get_page_for_api(request)
+
+    if page is None:
+        return JsonResponse(_empty_contact_page_payload(requested_lang))
+
+    return JsonResponse(serialize_contact_page(page, request, requested_lang))

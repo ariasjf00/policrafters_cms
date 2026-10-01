@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 import re
 
 from home.models import HomePage
-from shared_cms.models import DirectContactBlock
+from shared_cms.models import BrandsHeaderBlock, DirectContactBlock
 from wagtail.models import Site
 
 
@@ -536,6 +536,19 @@ def _get_direct_contact_block_for_api(request):
     return locale_candidates.order_by("-pk").first()
 
 
+def _get_brands_header_block_for_api(request):
+    lang = _resolve_language(request)
+    candidate_qs = BrandsHeaderBlock.objects.select_related("locale").prefetch_related("brand_logo_items")
+
+    locale_candidates = candidate_qs.filter(locale__language_code=lang)
+    if not locale_candidates.exists() and lang != "en":
+        locale_candidates = candidate_qs.filter(locale__language_code="en")
+    if not locale_candidates.exists():
+        locale_candidates = candidate_qs
+
+    return locale_candidates.order_by("-pk").first()
+
+
 def _serialize_media_url(value, request=None):
     if value in (None, ""):
         return None
@@ -550,6 +563,14 @@ def _serialize_media_url(value, request=None):
         return value
 
     return None
+
+
+def _json_no_cache_response(data):
+    response = JsonResponse(data)
+    response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response["Pragma"] = "no-cache"
+    response["Expires"] = "0"
+    return response
 
 
 def serialize_home_page(page, request, requested_lang=None):
@@ -779,6 +800,37 @@ def serialize_direct_contact_snippet(block, request, requested_lang=None):
     }
 
 
+def serialize_brands_header_snippet(block, request, requested_lang=None):
+    requested_lang = requested_lang or _resolve_language(request)
+    response_locale = _normalize_locale_code(
+        getattr(
+            getattr(block, "locale", None),
+            "language_code",
+            requested_lang,
+        )
+    )
+
+    brand_logos = _get_related_items_payload(
+        block.brand_logo_items.all().order_by("sort_order", "pk"),
+        lambda item: {
+            "key": _normalize_copy_text(getattr(item, "key", "")),
+            "placeholder_text": _normalize_copy_text(getattr(item, "placeholder_text", "")),
+            "image": _get_image_payload(getattr(item, "image", None), request)
+            if getattr(item, "image", None)
+            else None,
+        },
+    )
+
+    return {
+        "type": "brands.BrandsHeader",
+        "title": block.title,
+        "locale": response_locale,
+        "fields": {
+            "brand_logos": brand_logos,
+        },
+    }
+
+
 def home_page_api(request):
     requested_lang = _resolve_language(request)
     page = _get_page_for_api(request)
@@ -832,12 +884,12 @@ def direct_contact_api(request):
             request,
             requested_lang,
         )
-        return JsonResponse(data)
+        return _json_no_cache_response(data)
 
     page = _get_page_for_direct_contact_api(request)
 
     if page is None:
-        return JsonResponse(
+        return _json_no_cache_response(
             {
                 "type": "shared_cms.DirectContactBlock",
                 "title": "",
@@ -857,4 +909,28 @@ def direct_contact_api(request):
         request,
         requested_lang,
     )
-    return JsonResponse(data)
+    return _json_no_cache_response(data)
+
+
+def brands_header_api(request):
+    requested_lang = _resolve_language(request)
+    block = _get_brands_header_block_for_api(request)
+
+    if block is None:
+        return _json_no_cache_response(
+            {
+                "type": "brands.BrandsHeader",
+                "title": "",
+                "locale": requested_lang,
+                "fields": {
+                    "brand_logos": [],
+                },
+            }
+        )
+
+    data = serialize_brands_header_snippet(
+        block,
+        request,
+        requested_lang,
+    )
+    return _json_no_cache_response(data)

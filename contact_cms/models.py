@@ -1,4 +1,6 @@
+from django.conf import settings
 from django.db import models
+from django.shortcuts import render
 
 from modelcluster.fields import ParentalKey
 from wagtail.admin.panels import FieldPanel, InlinePanel, MultiFieldPanel
@@ -19,6 +21,22 @@ class ContactPage(Page):
     phone_href = models.CharField(max_length=120, blank=True)
     email = models.EmailField(blank=True)
     url_contact = models.URLField(blank=True)
+
+    def serve_preview(self, request, mode_name):
+        from contact_cms.api import serialize_contact_page
+
+        lang = getattr(getattr(self, "locale", None), "language_code", "en")
+        data = serialize_contact_page(self, request, lang)
+
+        return render(
+            request,
+            "contact_cms/astro_preview.html",
+            {
+                "preview_data": data,
+                "preview_lang": lang,
+                "astro_preview_url": settings.ASTRO_PREVIEW_URL,
+            },
+        )
 
     content_panels = Page.content_panels + [
         MultiFieldPanel(

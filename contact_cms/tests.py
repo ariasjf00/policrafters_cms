@@ -1,4 +1,5 @@
 from contact_cms.models import ContactLocationItem, ContactPage
+from django.test import RequestFactory
 
 from wagtail.models import Page, Site
 from wagtail.test.utils import WagtailPageTestCase
@@ -86,3 +87,12 @@ class ContactPageRenderTests(WagtailPageTestCase):
 
     def test_contact_page_is_renderable(self):
         self.assertPageIsRenderable(self.contact_page)
+
+    def test_contact_page_preview_renders_astro_iframe_and_payload(self):
+        request = RequestFactory().get("/admin/")
+        response = self.contact_page.serve_preview(request, mode_name="default")
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf-8")
+        self.assertIn("/contact-us/?lang=en", content)
+        self.assertIn('"type": "contact_cms.ContactPage"', content)
