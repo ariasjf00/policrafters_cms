@@ -13,6 +13,7 @@ from home.api import brands_header_api, direct_contact_api, home_page_api
 from renovations.api import renovation_index_api
 from search import views as search_views
 from services.api import services_page_api
+from terms_cms.api import terms_page_api
 
 urlpatterns = [
     path("django-admin/", admin.site.urls),
@@ -44,6 +45,14 @@ urlpatterns = [
     path("api/contact-page/", contact_page_api),
     path("api/contact-us", contact_page_api),
     path("api/contact-us/", contact_page_api),
+    path("api/terms-page", terms_page_api, name="terms_page_api"),
+    path("api/terms-page/", terms_page_api),
+    path("api/terms", terms_page_api),
+    path("api/terms/", terms_page_api),
+    path("api/terms-and-conditions", terms_page_api),
+    path("api/terms-and-conditions/", terms_page_api),
+    path("api/terms-annd-conditions", terms_page_api),
+    path("api/terms-annd-conditions/", terms_page_api),
     path("search/", search_views.search, name="search"),
 ]
 
