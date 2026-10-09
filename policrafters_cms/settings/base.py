@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "services",
     "contact_cms",
     "terms_cms",
+    "warranty_cms",
     "shared_cms",
     "search",
     "wagtail.contrib.forms",

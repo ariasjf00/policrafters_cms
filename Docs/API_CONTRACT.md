@@ -512,9 +512,6 @@ Página de términos y condiciones referenciada por [terms-and-conditions.astro]
 Mocks de referencia: [src/mocks/terms-page.en.json](../src/mocks/terms-page.en.json) y [src/mocks/terms-page.es.json](../src/mocks/terms-page.es.json).
 
 Endpoint sugerido para este payload: `PUBLIC_TERMS_API_URL`.
-En este CMS quedó expuesto como `/api/terms-page` (con alias `/api/terms`,
-`/api/terms-and-conditions` y `/api/terms-annd-conditions` para compatibilidad
-de rutas del frontend).
 
 Nota importante: igual que ServicesPage y BrandsPage, la API devuelve un solo idioma por request. El frontend pide `?lang=en` y `?lang=es` por separado para poder renderizar ambos idiomas en el markup sin mezclar campos bilingües en una sola respuesta.
 
@@ -550,6 +547,56 @@ Nota importante: igual que ServicesPage y BrandsPage, la API devuelve un solo id
 - El backend o mock devuelve `intro_heading`, `intro_body` y `terms` ya localizados para un solo idioma por respuesta; el frontend no espera objetos bilingües ni pares `_en`.
 - Esta página no incluye `contact_links` ni los datos del carrusel de catálogos; ambos bloques viven en sus contratos compartidos y esta página no los usa.
 - El frontend solicita `?lang=en` y `?lang=es` por separado para renderizar ambos idiomas con el mismo patrón que HomePage, ServicesPage, ContactPage, CollectionIndexPage y RenovationIndexPage.
+
+## WarrantyPage
+
+Página de garantía referenciada por [warranty.astro](../src/pages/warranty.astro). Contrato propio, sin depender de HomePage ni de otras páginas. No renderiza el carrusel de [CatalogIndex](#catalogindex--catálogos) ni el bloque de [DirectContactBlock](#directcontactblock--contacto-directo-compartido): la página termina en el footer. Misma estructura de intro (título + párrafo con regla vertical) que [TermsPage](#termspage), seguida de secciones numeradas con viñetas en vez de un párrafo simple.
+
+Mocks de referencia: [src/mocks/warranty-page.en.json](../src/mocks/warranty-page.en.json) y [src/mocks/warranty-page.es.json](../src/mocks/warranty-page.es.json).
+
+Endpoint sugerido para este payload: `PUBLIC_WARRANTY_API_URL`.
+
+Nota importante: igual que TermsPage, ServicesPage y BrandsPage, la API devuelve un solo idioma por request. El frontend pide `?lang=en` y `?lang=es` por separado para poder renderizar ambos idiomas en el markup sin mezclar campos bilingües en una sola respuesta.
+
+```json
+{
+  "type": "warranty.WarrantyPage",
+  "title": "string",
+  "locale": "en | es",
+  "meta": {
+    "seo_title": "string",
+    "search_description": "string"
+  },
+  "fields": {
+    "intro_heading": "string",
+    "intro_body": "string",
+    "sections": [
+      {
+        "key": "string",
+        "title": "string",
+        "column": "left | right",
+        "intro": "string",
+        "items": [
+          { "label": "string", "text": "string" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Reglas de implementación
+
+- `sections` es un array dinámico y ordenado; el frontend numera cada entrada según su posición (1-indexado), así que `title` no incluye el número — el frontend lo agrega al renderizar. El diseño actual usa 5 entradas, pero el frontend no asume una cantidad fija.
+- `column` determina en qué columna visual cae la sección en escritorio (`"left"` o `"right"`); el frontend conserva el orden del payload dentro de cada columna. En mobile todas las secciones vuelven al orden numérico 1→n. Si `column` falta o trae un valor inválido, el frontend usa un fallback por índice: posición par (0-indexada) → `left`, impar → `right`.
+- `column` y `key` son independientes del idioma; el frontend los lee siempre de la respuesta en inglés.
+- `items[].label` puede ser una cadena vacía; en ese caso el frontend no renderiza la etiqueta en negrita para esa viñeta.
+- `key` es un slug estable en kebab-case, igual en ambos idiomas.
+- `intro_heading` e `intro_body` alimentan el bloque superior de la página (título + párrafo introductorio con una regla vertical a la izquierda), igual que en TermsPage; no se repiten en `sections`.
+- Todo campo de imagen seguiría la convención general del documento, pero esta página no tiene imágenes.
+- El backend o mock devuelve `intro_heading`, `intro_body` y `sections` (incluyendo `items`) ya localizados para un solo idioma por respuesta; el frontend no espera objetos bilingües ni pares `_en`. `sections` e `items` se emparejan entre idiomas por índice, y el inglés determina la cantidad.
+- Esta página no incluye `contact_links` ni los datos del carrusel de catálogos; ambos bloques viven en sus contratos compartidos y esta página no los usa.
+- El frontend solicita `?lang=en` y `?lang=es` por separado para renderizar ambos idiomas con el mismo patrón que TermsPage, HomePage, ServicesPage, ContactPage, CollectionIndexPage y RenovationIndexPage.
 
 ## ModelPage
 
@@ -849,53 +896,3 @@ desplegarse; la ruta final (`POST /api/leads/from-web/`) sigue pendiente.
 
 - `2xx` — el frontend limpia el formulario y muestra el mensaje de éxito. El cuerpo no se lee.
 - Cualquier otro código o fallo de red — el frontend conserva lo escrito y muestra un
-  error con el correo de contacto como alternativa.
-
-### Validación y seguridad (responsabilidad del backend)
-
-El frontend valida y normaliza **solo para la experiencia de usuario**. Cualquiera puede
-saltarse la página y hacer `POST` directo al endpoint, así que el backend debe asumir que
-no existe validación previa:
-
-- [ ] **Revalidar todo**: tipos, obligatoriedad (`name`, `email`, `message`) y formato de correo.
-- [ ] **Límites de longitud** propios. El formulario aplica `maxlength` de 100 (name),
-      254 (email), 120 (company), 25 (phone) y 2000 (message); el backend debe imponer
-      los mismos por su cuenta, más un tope de tamaño del cuerpo.
-- [ ] **Inyección de cabeceras de correo**: si algún campo termina en `From`, `Reply-To` o
-      `Subject`, eliminar CR/LF. Usar `EmailMessage` de Django (lanza `BadHeaderError`) en
-      lugar de concatenar cabeceras a mano.
-- [ ] **Rate limiting por IP** — es la defensa real contra spam.
-- [ ] **CORS**: permitir solo el origen del sitio. Al ser un frontend estático y separado,
-      el flujo de CSRF por cookie de Django no aplica; la lista de orígenes más el rate
-      limiting ocupan su lugar.
-- [ ] **No sanitizar en escritura.** Guardar el texto tal cual y escapar en el punto de
-      uso (las plantillas de Django y el admin de Wagtail ya lo hacen). Escapar antes de
-      guardar corrompe nombres legítimos como `O'Brien` o `Muñoz`.
-
-El formulario ya incluye un honeypot (campo `website`, oculto fuera de pantalla) y un
-descarte por envío en menos de 2 segundos. Ambos se resuelven en el cliente y **no** viajan
-en el payload, así que no reemplazan al rate limiting del servidor.
-
----
-
-## Cómo lo usa cada lado
-
-**Frontend (Astro):**
-- Crear `src/mocks/home.json` y `src/mocks/model-page.json` con datos falsos que respeten esta forma exacta.
-- Construir los componentes (layout, GSAP, Tailwind) consumiendo esos mocks.
-- Cuando el endpoint real exista, cambiar el `fetch` de la ruta del mock a `WAGTAIL_API_URL` (ver `.env.local`).
-
-**Backend (Wagtail):**
-- Al definir `HomePage` y `ModelPage`, configurar `api_fields` para que `wagtail.api.v2` devuelva exactamente esta estructura.
-- Cualquier cambio de nombre o tipo de campo debe reflejarse primero aquí y avisarse al frontend antes de desplegarse.
-
----
-
-## Pendiente de definir (próximos contratos)
-
-- [x] `RenovationIndexPage` (ver [RenovationIndexPage](#renovationindexpage))
-- [x] `ServicesPage` (ver [ServicesPage](#servicespage))
-- [x] `BrandsHeader` (ver [BrandsHeader](#brandsheader))
-- [x] `TermsPage` (ver [TermsPage](#termspage))
-- [x] `ContactPage` (contenido visual de `/contact-us`, excluye formulario)
-- [x] Endpoint de leads (`POST /api/leads/from-web/` en el CRM) — ver [Formulario de contacto (leads)](#formulario-de-contacto-leads). Borrador del frontend, pendiente de acordar la ruta final con el backend.

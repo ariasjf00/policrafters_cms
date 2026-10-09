@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block body_class %}template-warranty-page{% endblock %}
+
+{% block content %}
+<main class="warranty-preview">
+    <section class="section">
+        <h1>{{ page.intro_heading|default:page.title }}</h1>
+        <p>{{ page.intro_body }}</p>
+    </section>
+
+    <section class="section">
+        {% for section in page.sections.all %}
+        <article class="warranty-section">
+            <h2>{{ forloop.counter }}. {{ section.title }}</h2>
+            {% if section.intro %}<p>{{ section.intro }}</p>{% endif %}
+            <ul>
+                {% for item in section.items.all %}
+                <li>
+                    {% if item.label %}<strong>{{ item.label }}</strong>{% endif %}
+                    {% if item.text %}{{ item.text }}{% endif %}
+                </li>
+                {% empty %}
+                <li>No warranty details yet.</li>
+                {% endfor %}
+            </ul>
+        </article>
+        {% empty %}
+        <p class="empty">No warranty sections yet.</p>
+        {% endfor %}
+    </section>
+</main>
+{% endblock content %}

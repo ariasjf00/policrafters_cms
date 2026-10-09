@@ -14,6 +14,7 @@ from renovations.api import renovation_index_api
 from search import views as search_views
 from services.api import services_page_api
 from terms_cms.api import terms_page_api
+from warranty_cms.api import warranty_page_api
 
 urlpatterns = [
     path("django-admin/", admin.site.urls),
@@ -53,6 +54,10 @@ urlpatterns = [
     path("api/terms-and-conditions/", terms_page_api),
     path("api/terms-annd-conditions", terms_page_api),
     path("api/terms-annd-conditions/", terms_page_api),
+    path("api/warranty-page", warranty_page_api, name="warranty_page_api"),
+    path("api/warranty-page/", warranty_page_api),
+    path("api/warranty", warranty_page_api),
+    path("api/warranty/", warranty_page_api),
     path("search/", search_views.search, name="search"),
 ]
 
