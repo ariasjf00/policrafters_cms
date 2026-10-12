@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "contact_cms",
     "terms_cms",
     "warranty_cms",
+    "why_policrafters",
     "shared_cms",
     "search",
     "wagtail.contrib.forms",

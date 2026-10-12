@@ -174,7 +174,7 @@ Importante:
 
 ## CatalogIndex — Catálogos
 
-Fuente única de la lista de catálogos descargables. La renderizan tanto [index.astro](../src/pages/index.astro) como [contact-us.astro](../src/pages/contact-us.astro) a través del componente compartido [CatalogsCarousel.astro](../src/components/CatalogsCarousel.astro), por eso vive en su propio endpoint en lugar de repetirse dentro de cada página.
+Fuente única de la lista de catálogos descargables. La renderizan tanto [index.astro](../src/pages/index.astro) como [contact-us.astro](../src/pages/contact-us.astro) a través del componente compartido [CatalogsCarousel.astro](../src/components/CatalogsCarousel.astro), por eso vive en su propio endpoint en lugar de repetirse dentro de cada página. La página [catalogs.astro](../src/pages/catalogs.astro) (`/catalogs`) consume este mismo endpoint para mostrar todos los catálogos en una grilla filtrable por categoría.
 
 Mocks: [src/mocks/catalogs.en.json](../src/mocks/catalogs.en.json) y [src/mocks/catalogs.es.json](../src/mocks/catalogs.es.json).
 
@@ -195,8 +195,15 @@ Nota para el backend: el frontend pide **los dos idiomas** en build time (`?lang
       "catalogs_heading": "string",
       "catalogs_prev_aria": "string",
       "catalogs_next_aria": "string",
-      "catalogs_dot_aria": "string"
+      "catalogs_dot_aria": "string",
+      "filter_heading": "string",
+      "filter_all_label": "string",
+      "empty_state_text": "string"
     },
+
+    "categories": [
+      { "key": "string", "label": "string" }
+    ],
 
     "catalogs": [
       {
@@ -205,7 +212,8 @@ Nota para el backend: el frontend pide **los dos idiomas** en build time (`?lang
           "url": "string",
           "alt": "string"
         },
-        "file_url": "string | null"
+        "file_url": "string | null",
+        "categories": ["string"]
       }
     ]
   }
@@ -218,6 +226,10 @@ Nota para el backend: el frontend pide **los dos idiomas** en build time (`?lang
 - `catalogs_dot_aria` es un prefijo: el frontend le agrega el número de página (`"Go to page" → "Go to page 3"`).
 - `file_url` es el PDF descargable. Si viene `null` o vacío, la tarjeta se renderiza igual pero sin destino útil.
 - El orden del array es el orden de presentación; el frontend no reordena.
+- `categories` (a nivel de `fields`) es la lista ordenada de filtros de la página `/catalogs`; `label` viene localizado y `key` es un slug estable en kebab-case, igual en ambos idiomas. El frontend agrega por su cuenta la opción "todos" usando `copy.filter_all_label`, así que el backend no la incluye en `categories`.
+- `catalogs[].categories` es un array de `key`s de `categories` (un catálogo puede pertenecer a varias). Es independiente del idioma; el frontend lo lee siempre de la respuesta en inglés. Un catálogo sin categorías solo aparece cuando el filtro "todos" está activo.
+- `filter_heading`, `filter_all_label` y `empty_state_text` solo los usa la página `/catalogs` (título de la barra de filtros, etiqueta de la opción "todos" y mensaje cuando ningún catálogo coincide). El carrusel los ignora, igual que ignora `categories`.
+- Estos campos son aditivos: un backend que todavía no los envíe no rompe el carrusel, y la página `/catalogs` cae al mock local campo por campo.
 
 ## DirectContactBlock — Contacto directo compartido
 
@@ -598,6 +610,85 @@ Nota importante: igual que TermsPage, ServicesPage y BrandsPage, la API devuelve
 - Esta página no incluye `contact_links` ni los datos del carrusel de catálogos; ambos bloques viven en sus contratos compartidos y esta página no los usa.
 - El frontend solicita `?lang=en` y `?lang=es` por separado para renderizar ambos idiomas con el mismo patrón que TermsPage, HomePage, ServicesPage, ContactPage, CollectionIndexPage y RenovationIndexPage.
 
+## WhyPolicraftersPage
+
+Página "Why Policrafters" referenciada por [why-policrafters.astro](../src/pages/why-policrafters.astro). Contrato propio, sin depender de HomePage ni de otras páginas. No renderiza el carrusel de [CatalogIndex](#catalogindex--catálogos) ni el bloque de [DirectContactBlock](#directcontactblock--contacto-directo-compartido): la página termina en el footer. Cinco secciones fijas: banner + intro, "por qué elegirnos", certificaciones/licencias, identidad corporativa, y socios fabricantes (con el mismo layout de fila alternada imagen/texto que [ServicesPage](#servicespage)).
+
+Mocks de referencia: [src/mocks/why-policrafters-page.en.json](../src/mocks/why-policrafters-page.en.json) y [src/mocks/why-policrafters-page.es.json](../src/mocks/why-policrafters-page.es.json).
+
+Endpoint sugerido para este payload: `PUBLIC_WHY_POLICRAFTERS_API_URL`.
+
+Nota importante: igual que TermsPage, ServicesPage y WarrantyPage, la API devuelve un solo idioma por request. El frontend pide `?lang=en` y `?lang=es` por separado para poder renderizar ambos idiomas en el markup sin mezclar campos bilingües en una sola respuesta.
+
+```json
+{
+  "type": "why_policrafters.WhyPolicraftersPage",
+  "title": "string",
+  "locale": "en | es",
+  "meta": {
+    "seo_title": "string",
+    "search_description": "string"
+  },
+  "fields": {
+    "hero_image": { "url": "string", "alt": "string" },
+    "intro_eyebrow": "string",
+    "intro_heading": "string",
+    "intro_body": ["string"],
+
+    "why_eyebrow": "string",
+    "why_heading": "string",
+    "why_items": [
+      { "key": "string", "heading": "string", "body": ["string"] }
+    ],
+
+    "certifications_image": { "url": "string", "alt": "string" },
+    "certifications_eyebrow": "string",
+    "certifications_heading": "string",
+    "certifications_body": ["string"],
+    "issuers": [
+      {
+        "key": "string",
+        "logo": { "url": "string", "alt": "string" },
+        "licenses": [
+          { "label": "string", "number": "string", "caption": "string" }
+        ]
+      }
+    ],
+
+    "identity_eyebrow": "string",
+    "identity_heading": "string",
+    "identity_items": [
+      { "key": "string", "heading": "string", "body": ["string"] }
+    ],
+
+    "partners_eyebrow": "string",
+    "partners_heading": "string",
+    "partners_intro": "string",
+    "partners": [
+      {
+        "key": "string",
+        "logo": { "url": "string", "alt": "string" },
+        "image": { "url": "string", "alt": "string" },
+        "body": ["string"]
+      }
+    ]
+  }
+}
+```
+
+### Reglas de implementación
+
+- Las cinco secciones (`hero`/intro, `why_items`, certificaciones, `identity_items`, `partners`) son fijas en el diseño actual; el frontend no asume que el backend pueda omitir una de ellas, pero sí trata `why_items`, `issuers`, `identity_items` y `partners` como arrays dinámicos.
+- `why_items` e `identity_items` comparten la misma forma (`key`, `heading`, `body[]`) porque ambas secciones usan el mismo componente de bloque con regla vertical izquierda (`HeadedTextBlock.astro`); el diseño actual usa 3 entradas en cada una, pero el frontend no asume una cantidad fija.
+- `issuers` modela la sección de certificaciones: cada emisor (`dbpr`, `aia`, `nga`) trae su propio logo y uno o más `licenses`. El diseño actual tiene 3 logos pero 4 licencias en total porque DBPR agrupa 2 licencias bajo un mismo logo — el frontend calcula el total de columnas sumando `licenses.length` de todos los `issuers`, y cada logo ocupa tantas columnas como licencias tenga su emisor.
+- `licenses[].number` es independiente del idioma (un número de licencia no se traduce); el frontend lo lee siempre de la respuesta en inglés, igual que `column`/`key` en WarrantyPage. `label` y `caption` sí vienen localizados.
+- `partners` empareja un logo (`logo`, sustituye al título/subtítulo de la fila) con una foto (`image`) y un cuerpo de texto (`body[]`), reutilizando el layout de fila alternada de [ServicesPage](#servicespage) (`services[]`). El orden del array determina la alternancia izquierda/derecha empezando por imagen a la izquierda en el primer elemento.
+- `key` en `why_items`, `issuers`, `identity_items` y `partners` es un slug estable en kebab-case, igual en ambos idiomas e independiente del idioma.
+- Todo campo de imagen sigue la convención general del documento (`{ "url", "alt" }`); las URLs relativas que vienen del CMS se normalizan con el origen de la API en el frontend, igual que en ServicesPage — las rutas `/images/...` de los mocks locales no se tocan.
+- El backend o mock devuelve todos los campos de texto ya localizados para un solo idioma por respuesta; el frontend no espera objetos bilingües ni pares `_en`. Los arrays se emparejan entre idiomas por índice, y el inglés determina la cantidad.
+- Esta página no incluye `contact_links` ni los datos del carrusel de catálogos; ambos bloques viven en sus contratos compartidos y esta página no los usa.
+- El frontend solicita `?lang=en` y `?lang=es` por separado para renderizar ambos idiomas con el mismo patrón que TermsPage, HomePage, ServicesPage, WarrantyPage, ContactPage, CollectionIndexPage y RenovationIndexPage.
+
 ## ModelPage
 
 Página de un modelo/producto individual dentro de una colección (referencia: falper.it).
@@ -896,3 +987,55 @@ desplegarse; la ruta final (`POST /api/leads/from-web/`) sigue pendiente.
 
 - `2xx` — el frontend limpia el formulario y muestra el mensaje de éxito. El cuerpo no se lee.
 - Cualquier otro código o fallo de red — el frontend conserva lo escrito y muestra un
+  error con el correo de contacto como alternativa.
+
+### Validación y seguridad (responsabilidad del backend)
+
+El frontend valida y normaliza **solo para la experiencia de usuario**. Cualquiera puede
+saltarse la página y hacer `POST` directo al endpoint, así que el backend debe asumir que
+no existe validación previa:
+
+- [ ] **Revalidar todo**: tipos, obligatoriedad (`name`, `email`, `message`) y formato de correo.
+- [ ] **Límites de longitud** propios. El formulario aplica `maxlength` de 100 (name),
+      254 (email), 120 (company), 25 (phone) y 2000 (message); el backend debe imponer
+      los mismos por su cuenta, más un tope de tamaño del cuerpo.
+- [ ] **Inyección de cabeceras de correo**: si algún campo termina en `From`, `Reply-To` o
+      `Subject`, eliminar CR/LF. Usar `EmailMessage` de Django (lanza `BadHeaderError`) en
+      lugar de concatenar cabeceras a mano.
+- [ ] **Rate limiting por IP** — es la defensa real contra spam.
+- [ ] **CORS**: permitir solo el origen del sitio. Al ser un frontend estático y separado,
+      el flujo de CSRF por cookie de Django no aplica; la lista de orígenes más el rate
+      limiting ocupan su lugar.
+- [ ] **No sanitizar en escritura.** Guardar el texto tal cual y escapar en el punto de
+      uso (las plantillas de Django y el admin de Wagtail ya lo hacen). Escapar antes de
+      guardar corrompe nombres legítimos como `O'Brien` o `Muñoz`.
+
+El formulario ya incluye un honeypot (campo `website`, oculto fuera de pantalla) y un
+descarte por envío en menos de 2 segundos. Ambos se resuelven en el cliente y **no** viajan
+en el payload, así que no reemplazan al rate limiting del servidor.
+
+---
+
+## Cómo lo usa cada lado
+
+**Frontend (Astro):**
+- Crear `src/mocks/home.json` y `src/mocks/model-page.json` con datos falsos que respeten esta forma exacta.
+- Construir los componentes (layout, GSAP, Tailwind) consumiendo esos mocks.
+- Cuando el endpoint real exista, cambiar el `fetch` de la ruta del mock a `WAGTAIL_API_URL` (ver `.env.local`).
+
+**Backend (Wagtail):**
+- Al definir `HomePage` y `ModelPage`, configurar `api_fields` para que `wagtail.api.v2` devuelva exactamente esta estructura.
+- Cualquier cambio de nombre o tipo de campo debe reflejarse primero aquí y avisarse al frontend antes de desplegarse.
+
+---
+
+## Pendiente de definir (próximos contratos)
+
+- [x] `RenovationIndexPage` (ver [RenovationIndexPage](#renovationindexpage))
+- [x] `ServicesPage` (ver [ServicesPage](#servicespage))
+- [x] `BrandsHeader` (ver [BrandsHeader](#brandsheader))
+- [x] `TermsPage` (ver [TermsPage](#termspage))
+- [x] `WarrantyPage` (ver [WarrantyPage](#warrantypage))
+- [x] `WhyPolicraftersPage` (ver [WhyPolicraftersPage](#whypolicrafterspage))
+- [x] `ContactPage` (contenido visual de `/contact-us`, excluye formulario)
+- [x] Endpoint de leads (`POST /api/leads/from-web/` en el CRM) — ver [Formulario de contacto (leads)](#formulario-de-contacto-leads). Borrador del frontend, pendiente de acordar la ruta final con el backend.

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block body_class %}template-why-policrafters-page{% endblock %}
+
+{% block content %}
+<main class="why-policrafters-preview">
+    <section class="section">
+        <h1>{{ page.intro_heading|default:page.title }}</h1>
+        {% for paragraph in page.intro_body %}
+        <p>{{ paragraph }}</p>
+        {% empty %}
+        <p>{{ page.partners_intro }}</p>
+        {% endfor %}
+    </section>
+
+    <section class="section">
+        <h2>{{ page.why_heading }}</h2>
+        {% for item in page.why_items.all %}
+        <article>
+            <h3>{{ item.heading }}</h3>
+            {% for paragraph in item.body %}
+            <p>{{ paragraph }}</p>
+            {% endfor %}
+        </article>
+        {% empty %}
+        <p class="empty">No why items yet.</p>
+        {% endfor %}
+    </section>
+</main>
+{% endblock content %}

@@ -15,6 +15,7 @@ from search import views as search_views
 from services.api import services_page_api
 from terms_cms.api import terms_page_api
 from warranty_cms.api import warranty_page_api
+from why_policrafters.api import why_policrafters_page_api
 
 urlpatterns = [
     path("django-admin/", admin.site.urls),
@@ -58,6 +59,10 @@ urlpatterns = [
     path("api/warranty-page/", warranty_page_api),
     path("api/warranty", warranty_page_api),
     path("api/warranty/", warranty_page_api),
+    path("api/why-policrafters-page", why_policrafters_page_api, name="why_policrafters_page_api"),
+    path("api/why-policrafters-page/", why_policrafters_page_api),
+    path("api/why-policrafters", why_policrafters_page_api),
+    path("api/why-policrafters/", why_policrafters_page_api),
     path("search/", search_views.search, name="search"),
 ]
 
