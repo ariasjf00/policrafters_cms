@@ -94,5 +94,5 @@ class ContactPageRenderTests(WagtailPageTestCase):
 
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf-8")
-        self.assertIn("/contact-us/?lang=en", content)
+        self.assertIn("/contact-us?lang=en", content)
         self.assertIn('"type": "contact_cms.ContactPage"', content)

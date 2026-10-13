@@ -117,5 +117,5 @@ class CatalogsApiTests(WagtailPageTestCase):
 
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf-8")
-        self.assertIn("/catalogs/?lang=en", content)
+        self.assertIn("/catalogs?lang=en", content)
         self.assertIn('"type": "catalogs_cms.CatalogIndexPage"', content)

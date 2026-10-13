@@ -81,5 +81,5 @@ class TermsPageRenderTests(WagtailPageTestCase):
 
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf-8")
-        self.assertIn("/terms-and-conditions/?lang=en", content)
+        self.assertIn("/terms-and-conditions?lang=en", content)
         self.assertIn('"type": "terms.TermsPage"', content)

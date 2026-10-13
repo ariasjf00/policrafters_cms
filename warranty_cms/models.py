@@ -70,8 +70,13 @@ class WarrantySection(TranslatableMixin, ClusterableModel, Orderable):
 
     def clean(self):
         super().clean()
-        if self.locale_id is None and self.page_id:
+        if self.page_id:
             self.locale_id = self.page.locale_id
+
+    def save(self, *args, **kwargs):
+        if self.page_id:
+            self.locale_id = self.page.locale_id
+        return super().save(*args, **kwargs)
 
     panels = [
         FieldPanel("key"),
@@ -101,8 +106,13 @@ class WarrantyItem(TranslatableMixin, Orderable):
 
     def clean(self):
         super().clean()
-        if self.locale_id is None and self.page_id:
+        if self.page_id:
             self.locale_id = self.page.locale_id
+
+    def save(self, *args, **kwargs):
+        if self.page_id:
+            self.locale_id = self.page.locale_id
+        return super().save(*args, **kwargs)
 
     panels = [
         FieldPanel("label"),

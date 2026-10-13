@@ -143,5 +143,5 @@ class WhyPolicraftersPageRenderTests(WagtailPageTestCase):
 
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf-8")
-        self.assertIn("/why-policrafters/?lang=en", content)
+        self.assertIn("/why-policrafters?lang=en", content)
         self.assertIn('"type": "why_policrafters.WhyPolicraftersPage"', content)

@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from django.test import RequestFactory
 
 from wagtail.models import Locale, Page, Site
@@ -110,5 +111,138 @@ class WarrantyPageRenderTests(WagtailPageTestCase):
 
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf-8")
-        self.assertIn("/warranty/?lang=en", content)
+        self.assertIn("/warranty?lang=en", content)
         self.assertIn('"type": "warranty.WarrantyPage"', content)
+
+
+class WarrantyInlineLocaleAssignmentTests(WagtailPageTestCase):
+    def setUp(self):
+        root_page = Page.get_first_root_node()
+        Site.objects.update_or_create(
+            hostname="testsite",
+            defaults={"root_page": root_page, "is_default_site": True},
+        )
+        self.page = WarrantyPage(
+            title="Warranty",
+            intro_heading="Warranty",
+            intro_body="Protect your project with our warranty coverage.",
+        )
+        root_page.add_child(instance=self.page)
+
+    def test_new_section_inherits_page_locale(self):
+        section = WarrantySection(
+            page=self.page,
+            key="coverage",
+            title="Coverage",
+            intro="What is covered.",
+            column="left",
+        )
+
+        section.full_clean()
+        self.assertEqual(section.locale_id, self.page.locale_id)
+
+    def test_section_save_realigns_locale_with_parent_page(self):
+        es_locale, _ = Locale.objects.get_or_create(language_code="es")
+        es_page = WarrantyPage(
+            title="Garantía",
+            intro_heading="Garantía",
+            intro_body="Cubre tu proyecto.",
+        )
+        Page.get_first_root_node().add_child(instance=es_page)
+        es_page.locale = es_locale
+        es_page.save()
+        section = WarrantySection(
+            page=es_page,
+            key="coverage-es",
+            title="Cobertura",
+            intro="Qué está cubierto.",
+            column="right",
+        )
+        section.save()
+
+        self.assertEqual(section.locale_id, es_page.locale_id)
+
+    def test_new_item_inherits_section_locale(self):
+        section = WarrantySection.objects.create(
+            page=self.page,
+            key="coverage",
+            title="Coverage",
+            intro="What is covered.",
+            column="left",
+        )
+        item = WarrantyItem(
+            page=section,
+            label="Product",
+            text="All coated products are covered for the first year.",
+        )
+
+        item.full_clean()
+
+        self.assertEqual(item.locale_id, section.locale_id)
+
+    def test_item_save_realigns_locale_with_parent_section(self):
+        es_locale, _ = Locale.objects.get_or_create(language_code="es")
+        es_page = WarrantyPage(
+            title="Garantía",
+            intro_heading="Garantía",
+            intro_body="Cubre tu proyecto.",
+        )
+        Page.get_first_root_node().add_child(instance=es_page)
+        es_page.locale = es_locale
+        es_page.save()
+
+        section = WarrantySection.objects.create(
+            page=es_page,
+            key="coverage-es",
+            title="Cobertura",
+            intro="Qué está cubierto.",
+            column="left",
+        )
+
+        item = WarrantyItem(
+            page=section,
+            label="Producto",
+            text="Detalle extendido.",
+            locale_id=self.page.locale_id,
+        )
+        item.save()
+
+        self.assertEqual(item.locale_id, section.locale_id)
+
+
+class WarrantyTranslationCopyTests(WagtailPageTestCase):
+    def setUp(self):
+        root_page = Page.get_first_root_node()
+        Site.objects.update_or_create(
+            hostname="testsite",
+            defaults={"root_page": root_page, "is_default_site": True},
+        )
+        self.page = WarrantyPage(
+            title="Warranty",
+            intro_heading="Warranty",
+            intro_body="Protect your project with our warranty coverage.",
+        )
+        root_page.add_child(instance=self.page)
+
+        section = WarrantySection.objects.create(
+            page=self.page,
+            key="coverage",
+            title="Coverage",
+            intro="What is covered.",
+            column="left",
+        )
+        WarrantyItem.objects.create(
+            page=section,
+            label="Product",
+            text="All coated products are covered for the first year.",
+        )
+
+    def test_copy_for_translation_does_not_raise_integrity_error(self):
+        es_locale, _ = Locale.objects.get_or_create(language_code="es")
+
+        try:
+            translated_page = self.page.copy_for_translation(es_locale, copy_parents=True, alias=False)
+        except IntegrityError as exc:
+            self.fail(f"copy_for_translation raised IntegrityError: {exc}")
+
+        self.assertEqual(translated_page.locale_id, es_locale.id)
