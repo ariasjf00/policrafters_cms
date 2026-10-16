@@ -9,6 +9,7 @@ from wagtail.documents import urls as wagtaildocs_urls
 from catalogs_cms.api import catalogs_index_api
 from collections_page.api import collections_index_api, product_detail_api
 from contact_cms.api import contact_page_api
+from finance.api import finance_page_api
 from home.api import brands_header_api, direct_contact_api, home_page_api
 from renovations.api import renovation_index_api
 from search import views as search_views
@@ -55,6 +56,10 @@ urlpatterns = [
     path("api/terms-and-conditions/", terms_page_api),
     path("api/terms-annd-conditions", terms_page_api),
     path("api/terms-annd-conditions/", terms_page_api),
+    path("api/finance-page", finance_page_api, name="finance_page_api"),
+    path("api/finance-page/", finance_page_api),
+    path("api/finance", finance_page_api),
+    path("api/finance/", finance_page_api),
     path("api/warranty-page", warranty_page_api, name="warranty_page_api"),
     path("api/warranty-page/", warranty_page_api),
     path("api/warranty", warranty_page_api),

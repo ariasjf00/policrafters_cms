@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "services",
     "contact_cms",
     "terms_cms",
+    "finance",
     "warranty_cms",
     "why_policrafters",
     "shared_cms",

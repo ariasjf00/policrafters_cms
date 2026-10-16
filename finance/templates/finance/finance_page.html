@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load wagtailimages_tags %}
+
+{% block body_class %}template-finance-page{% endblock %}
+
+{% block content %}
+<main class="finance-preview">
+    <section class="section">
+        {% if page.hero_image %}
+            {% image page.hero_image width-1600 as finance_hero %}
+            <img src="{{ finance_hero.url }}" alt="{{ page.hero_image_alt|default:page.hero_image.description|default:page.title }}">
+        {% endif %}
+        <h1>{{ page.intro_heading|default:page.title }}</h1>
+        <p>{{ page.intro_body }}</p>
+    </section>
+
+    <section class="section">
+        {% for step in page.steps.all %}
+        <article class="finance-step">
+            <h2>{{ forloop.counter }}. {{ step.title }}</h2>
+            {% if step.subtitle %}<p><strong>{{ step.subtitle }}</strong></p>{% endif %}
+            <p>{{ step.body }}</p>
+        </article>
+        {% empty %}
+        <p class="empty">No finance steps yet.</p>
+        {% endfor %}
+    </section>
+
+    <section class="section">
+        <h2>{{ page.contact_heading }}</h2>
+        <p>{{ page.contact_phone_display }}</p>
+        <p>
+            {% if page.contact_email_label %}<strong>{{ page.contact_email_label }}:</strong> {% endif %}
+            {{ page.contact_email }}
+        </p>
+    </section>
+</main>
+{% endblock content %}
