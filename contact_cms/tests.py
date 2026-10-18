@@ -19,12 +19,16 @@ class ContactApiTests(WagtailPageTestCase):
             intro="Talk with our team.",
             phone_label="Phone",
             email_label="Email",
+            banner_eyebrow="Start a project",
+            banner_heading="Let’s build something extraordinary",
+            project_button_label="Start your project",
             locations_heading="Our locations",
             locations_aria="Locations list",
             learn_more="Learn more",
             phone_display="+1 800 111 2222",
             phone_href="tel:+18001112222",
             email="info@policrafters.com",
+            url_contact="https://example.com/leads/quote",
         )
         root_page.add_child(instance=self.contact_page)
 
@@ -67,10 +71,14 @@ class ContactApiTests(WagtailPageTestCase):
         self.assertIn("fields", data)
         self.assertIn("copy", data["fields"])
         self.assertIn("contact", data["fields"])
+        self.assertIn("banner_image", data["fields"])
         self.assertIn("locations", data["fields"])
 
         self.assertEqual(data["fields"]["copy"]["heading"], "Get in touch")
+        self.assertEqual(data["fields"]["copy"]["banner_eyebrow"], "Start a project")
+        self.assertEqual(data["fields"]["copy"]["banner_heading"], "Let’s build something extraordinary")
         self.assertEqual(data["fields"]["contact"]["phone_href"], "tel:+18001112222")
+        self.assertEqual(data["fields"]["contact"]["url_contact"], "https://example.com/leads/quote")
         self.assertGreaterEqual(len(data["fields"]["locations"]), 1)
 
 

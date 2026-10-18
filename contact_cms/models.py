@@ -12,6 +12,8 @@ class ContactPage(Page):
     intro = models.TextField(blank=True)
     phone_label = models.CharField(max_length=120, blank=True)
     email_label = models.CharField(max_length=120, blank=True)
+    banner_eyebrow = models.CharField(max_length=120, blank=True)
+    banner_heading = models.CharField(max_length=255, blank=True)
     project_button_label = models.CharField(max_length=120, blank=True)
     locations_heading = models.CharField(max_length=255, blank=True)
     locations_aria = models.CharField(max_length=255, blank=True)
@@ -21,6 +23,13 @@ class ContactPage(Page):
     phone_href = models.CharField(max_length=120, blank=True)
     email = models.EmailField(blank=True)
     url_contact = models.URLField(blank=True)
+    banner_image = models.ForeignKey(
+        "wagtailimages.Image",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
 
     def serve_preview(self, request, mode_name):
         from contact_cms.api import serialize_contact_page
@@ -45,6 +54,8 @@ class ContactPage(Page):
                 FieldPanel("intro"),
                 FieldPanel("phone_label"),
                 FieldPanel("email_label"),
+                FieldPanel("banner_eyebrow"),
+                FieldPanel("banner_heading"),
                 FieldPanel("project_button_label"),
                 FieldPanel("locations_heading"),
                 FieldPanel("locations_aria"),
@@ -58,6 +69,7 @@ class ContactPage(Page):
                 FieldPanel("phone_href"),
                 FieldPanel("email"),
                 FieldPanel("url_contact"),
+                FieldPanel("banner_image"),
             ],
             heading="Contact",
         ),
