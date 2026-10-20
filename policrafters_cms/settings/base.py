@@ -249,8 +249,10 @@ WAGTAILSEARCH_BACKENDS = {
 }
 
 # Base URL to use when referring to full URLs within the Wagtail admin backend -
-# e.g. in notification emails. Don't include '/admin' or a trailing slash
-WAGTAILADMIN_BASE_URL = "http://example.com"
+# e.g. in notification emails. Don't include '/admin' or a trailing slash.
+# Defaults to the CMS backend local port so preview media keeps pointing to the
+# Wagtail API instead of the Astro frontend preview host.
+WAGTAILADMIN_BASE_URL = env("WAGTAILADMIN_BASE_URL", default="http://localhost:8000")
 
 # Allowed file extensions for documents in the document library.
 # This can be omitted to allow all files, but note that this may present a security risk

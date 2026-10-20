@@ -11,7 +11,7 @@ from collections_page.models import (
 )
 
 from wagtail.images import get_image_model
-from wagtail.models import Page, Site
+from wagtail.models import Locale, Page, Site
 from wagtail.test.utils import WagtailPageTestCase
 
 
@@ -177,6 +177,38 @@ class CollectionsApiTests(WagtailPageTestCase):
         self.assertEqual(data["fields"]["product_heading"], "Model 1")
         self.assertEqual(data["fields"]["intro_text_product"], "Final product intro paragraph.")
         self.assertEqual(data["fields"]["back_to_menu_label"], "Back to products menu")
+
+    def test_product_detail_api_includes_meta_translations(self):
+        product = CollectionProductItem.objects.create(
+            page=self.collections_page,
+            category_key="shower-doors",
+            type_key="fixed",
+            title="Model 1",
+            slug="model-1",
+        )
+        es_locale, _ = Locale.objects.get_or_create(language_code="es")
+        translated_page = self.collections_page.copy_for_translation(
+            es_locale,
+            copy_parents=True,
+            alias=False,
+        )
+        translated_page.slug = "colecciones"
+        translated_page.save_revision().publish()
+
+        translated_product = translated_page.product_items.get(
+            translation_key=product.translation_key
+        )
+        translated_product.title = "Modelo 1"
+        translated_product.slug = "modelo-1"
+        translated_product.save()
+
+        response = self.client.get("/api/products?locale=en&slug=shower-doors/fixed/model-1")
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        self.assertIn("translations", data["meta"])
+        self.assertEqual(data["meta"]["translations"]["en"], "shower-doors/fixed/model-1")
+        self.assertEqual(data["meta"]["translations"]["es"], "shower-doors/fixed/modelo-1")
 
     def test_product_detail_api_serializes_gallery_pair_from_image_fields(self):
         buffer = BytesIO()

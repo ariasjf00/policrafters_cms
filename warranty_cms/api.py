@@ -1,16 +1,10 @@
 from django.http import JsonResponse
-from wagtail.models import Site
 
+from shared_cms.api_utils import build_translations_map, get_page_with_locale_fallback, resolve_request_language
 from warranty_cms.models import WarrantyPage
 
 
-def _resolve_language(request):
-    lang = (request.GET.get("lang") or request.GET.get("locale") or "en").strip().lower()
-    if lang.startswith("es"):
-        return "es"
-    if lang.startswith("en"):
-        return "en"
-    return "en"
+_resolve_language = resolve_request_language
 
 
 def _normalize_copy_text(value):
@@ -28,54 +22,10 @@ def _normalize_locale_code(locale_code):
     return "en"
 
 
-def _get_site_root_page(request):
-    default_site = Site.objects.filter(is_default_site=True).order_by("-id").first()
-    if default_site is not None and default_site.root_page_id is not None:
-        return default_site.root_page.specific
-
-    site = getattr(request, "site", None)
-    if site is not None and site.root_page_id is not None:
-        return site.root_page.specific
-
-    try:
-        site = Site.find_for_request(request)
-    except Exception:
-        site = None
-
-    if site is not None and site.root_page_id is not None:
-        return site.root_page.specific
-
-    return None
-
-
 def _get_warranty_page_for_api(request):
     lang = _resolve_language(request)
-    root_page = _get_site_root_page(request)
-
-    candidate_qs = WarrantyPage.objects.select_related("locale").prefetch_related("sections__items")
-    global_qs = WarrantyPage.objects.select_related("locale").prefetch_related("sections__items")
-
-    if root_page is not None:
-        candidate_qs = candidate_qs.child_of(root_page)
-
-    locale_candidates = candidate_qs.filter(locale__language_code=lang)
-    if not locale_candidates.exists():
-        locale_candidates = global_qs.filter(locale__language_code=lang)
-
-    if not locale_candidates.exists() and lang != "en":
-        locale_candidates = candidate_qs.filter(locale__language_code="en")
-
-    if not locale_candidates.exists():
-        locale_candidates = global_qs.filter(locale__language_code="en")
-
-    if not locale_candidates.exists():
-        locale_candidates = candidate_qs
-
-    page = locale_candidates.order_by("-pk").first()
-    if page is None:
-        page = candidate_qs.order_by("-pk").first()
-
-    return page
+    queryset = WarrantyPage.objects.select_related("locale").prefetch_related("sections__items")
+    return get_page_with_locale_fallback(queryset, request, lang)
 
 
 def _empty_warranty_page_payload(requested_lang):
@@ -134,15 +84,19 @@ def serialize_warranty_page(page, request, requested_lang=None):
     search_description = _normalize_copy_text(
         getattr(page, "search_description", "")
     ) or _normalize_copy_text(getattr(page, "intro_body", ""))
+    meta = {
+        "seo_title": seo_title,
+        "search_description": search_description,
+    }
+    translations = build_translations_map(page)
+    if translations:
+        meta["translations"] = translations
 
     return {
         "type": "warranty.WarrantyPage",
         "title": _normalize_copy_text(getattr(page, "title", "")),
         "locale": response_locale,
-        "meta": {
-            "seo_title": seo_title,
-            "search_description": search_description,
-        },
+        "meta": meta,
         "fields": {
             "intro_heading": _normalize_copy_text(getattr(page, "intro_heading", "")),
             "intro_body": _normalize_copy_text(getattr(page, "intro_body", "")),

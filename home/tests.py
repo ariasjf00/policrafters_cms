@@ -6,7 +6,7 @@ from django.test import RequestFactory, SimpleTestCase, TestCase
 from django.utils import translation
 from wagtail.admin.views.pages.edit import EditView
 from wagtail.admin.wagtail_hooks import PageListingViewLiveButton
-from wagtail.models import Page, Site
+from wagtail.models import Locale, Page, Site
 from wagtail.test.utils import WagtailPageTestCase
 from policrafters_cms.middleware import force_preview_locale
 from home.templatetags.localized_urls import add_locale_query
@@ -210,6 +210,24 @@ class HomeApiTests(WagtailPageTestCase):
         data = response.json()
         self.assertIn("/media/videos/home/hero-horizontal", data["fields"]["hero_video_horizontal"])
         self.assertIn("/media/videos/home/hero-vertical", data["fields"]["hero_video_vertical"])
+
+    def test_home_api_includes_meta_translations_when_translation_exists(self):
+        es_locale, _ = Locale.objects.get_or_create(language_code="es")
+        translated_page = self.homepage.copy_for_translation(
+            es_locale,
+            copy_parents=True,
+            alias=False,
+        )
+        translated_page.slug = "inicio"
+        translated_page.save_revision().publish()
+
+        response = self.client.get("/api/home?locale=en")
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        self.assertIn("translations", data["meta"])
+        self.assertEqual(data["meta"]["translations"]["en"], self.homepage.slug)
+        self.assertEqual(data["meta"]["translations"]["es"], "inicio")
 
 
 class DirectContactApiTests(WagtailPageTestCase):

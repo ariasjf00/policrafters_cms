@@ -119,3 +119,21 @@ class RenovationApiTests(WagtailPageTestCase):
         self.assertIn("image", preview)
         self.assertIn("url", preview["image"])
         self.assertEqual(preview["image"]["alt"], "Project Alpha")
+
+    def test_renovations_api_falls_back_to_global_page_when_site_root_has_no_child(self):
+        root_page = Page.get_first_root_node()
+        isolated_site_root = Page(title="Isolated site root")
+        root_page.add_child(instance=isolated_site_root)
+
+        site = Site.objects.filter(is_default_site=True).order_by("-id").first()
+        self.assertIsNotNone(site)
+        site.root_page = isolated_site_root
+        site.save(update_fields=["root_page"])
+
+        response = self.client.get("/api/renovations?lang=en")
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        self.assertEqual(data["type"], "renovations.RenovationIndexPage")
+        self.assertEqual(data["fields"]["hero_title"], "Renovations")
+        self.assertTrue(data["fields"]["categories"])

@@ -1,16 +1,15 @@
 from django.http import JsonResponse
-from wagtail.models import Site
 
 from services.models import ServicesPage
+from shared_cms.api_utils import (
+    build_absolute_asset_url,
+    build_translations_map,
+    get_page_with_locale_fallback,
+    resolve_request_language,
+)
 
 
-def _resolve_language(request):
-    lang = (request.GET.get("lang") or request.GET.get("locale") or "en").strip().lower()
-    if lang.startswith("es"):
-        return "es"
-    if lang.startswith("en"):
-        return "en"
-    return "en"
+_resolve_language = resolve_request_language
 
 
 def _normalize_copy_text(value):
@@ -30,16 +29,7 @@ def _normalize_locale_code(locale_code):
 
 def _build_absolute_url(request, value):
     url = _normalize_copy_text(value)
-    if not url:
-        return ""
-    if url.startswith(("http://", "https://")):
-        return url
-    if url.startswith("//"):
-        return f"{request.scheme}:{url}"
-    try:
-        return request.build_absolute_uri(url)
-    except Exception:
-        return url
+    return build_absolute_asset_url(request, url)
 
 
 def _get_image_payload(image, request, alt_text=""):
@@ -64,43 +54,13 @@ def _get_image_payload(image, request, alt_text=""):
     }
 
 
-def _get_site_root_page(request):
-    default_site = Site.objects.filter(is_default_site=True).order_by("-id").first()
-    if default_site is not None and default_site.root_page_id is not None:
-        return default_site.root_page.specific
-
-    site = getattr(request, "site", None)
-    if site is not None and site.root_page_id is not None:
-        return site.root_page.specific
-
-    try:
-        site = Site.find_for_request(request)
-    except Exception:
-        site = None
-
-    if site is not None and site.root_page_id is not None:
-        return site.root_page.specific
-
-    return None
-
-
 def _get_services_page_for_api(request):
     lang = _resolve_language(request)
-    root_page = _get_site_root_page(request)
-
     queryset = ServicesPage.objects.select_related("locale", "hero_image").prefetch_related(
         "service_items",
         "service_items__image",
     )
-    if root_page is not None:
-        queryset = queryset.child_of(root_page)
-
-    page = queryset.filter(locale__language_code=lang).order_by("-pk").first()
-    if page is None and lang != "en":
-        page = queryset.filter(locale__language_code="en").order_by("-pk").first()
-    if page is None:
-        page = queryset.order_by("-pk").first()
-    return page
+    return get_page_with_locale_fallback(queryset, request, lang)
 
 
 def _normalize_body(body):
@@ -147,15 +107,19 @@ def serialize_services_page(page, request, requested_lang=None):
     seo_title = _normalize_copy_text(getattr(page, "seo_title", "")) or _normalize_copy_text(
         getattr(page, "title", "")
     )
+    meta = {
+        "seo_title": seo_title,
+        "search_description": _normalize_copy_text(getattr(page, "search_description", "")),
+    }
+    translations = build_translations_map(page)
+    if translations:
+        meta["translations"] = translations
 
     return {
         "type": "services.ServicesPage",
         "title": _normalize_copy_text(getattr(page, "title", "")),
         "locale": response_locale,
-        "meta": {
-            "seo_title": seo_title,
-            "search_description": _normalize_copy_text(getattr(page, "search_description", "")),
-        },
+        "meta": meta,
         "fields": {
             "hero_image": _get_image_payload(
                 getattr(page, "hero_image", None),

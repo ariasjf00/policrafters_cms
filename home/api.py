@@ -3,8 +3,13 @@ from django.shortcuts import get_object_or_404
 import re
 
 from home.models import HomePage
+from shared_cms.api_utils import (
+    build_absolute_asset_url,
+    build_translations_map,
+    get_locale_candidates_with_global_fallback,
+    resolve_request_language,
+)
 from shared_cms.models import BrandsHeaderBlock, DirectContactBlock
-from wagtail.models import Site
 
 
 def _get_related_items_payload(items, mapper):
@@ -23,35 +28,12 @@ def _serialize_richtext(value):
     return re.sub(r"\sdata-block-key=(\"[^\"]*\"|'[^']*')", "", html)
 
 
-def _resolve_language(request):
-    lang = (request.GET.get("lang") or request.GET.get("locale") or "en").strip().lower()
-
-    if lang.startswith("es"):
-        return "es"
-    if lang.startswith("en"):
-        return "en"
-
-    return "en"
+_resolve_language = resolve_request_language
 
 
 def _build_absolute_url(request, value):
     url = _normalize_copy_text(value)
-    if not url:
-        return ""
-
-    if url.startswith(("http://", "https://")):
-        return url
-
-    if url.startswith("//"):
-        return f"{request.scheme}:{url}"
-
-    if request is None:
-        return url
-
-    try:
-        return request.build_absolute_uri(url)
-    except Exception:
-        return url
+    return build_absolute_asset_url(request, url)
 
 
 def _get_image_payload(image, request=None):
@@ -319,26 +301,6 @@ def _get_legacy_contact_links(page, lang):
     return payload
 
 
-def _get_site_root_page(request):
-    default_site = Site.objects.filter(is_default_site=True).order_by('-id').first()
-    if default_site is not None and default_site.root_page_id is not None:
-        return default_site.root_page.specific
-
-    site = getattr(request, "site", None)
-    if site is not None and site.root_page_id is not None:
-        return site.root_page.specific
-
-    try:
-        site = Site.find_for_request(request)
-    except Exception:
-        site = None
-
-    if site is not None and site.root_page_id is not None:
-        return site.root_page.specific
-
-    return None
-
-
 def _home_page_has_content(page):
     if page is None:
         return False
@@ -446,23 +408,13 @@ def _direct_contact_page_priority(page):
 
 def _get_page_for_api(request):
     lang = _resolve_language(request)
-    root_page = _get_site_root_page(request)
 
-    candidate_qs = HomePage.objects.select_related("locale").prefetch_related("featured_projects_items", "team_members_items")
-    global_qs = HomePage.objects.select_related("locale").prefetch_related("featured_projects_items", "team_members_items")
-    if root_page is not None:
-        candidate_qs = candidate_qs.child_of(root_page)
-
-    locale_candidates = candidate_qs.filter(locale__language_code=lang)
-    if not locale_candidates.exists():
-        # If the current site tree has no requested locale, try globally.
-        locale_candidates = global_qs.filter(locale__language_code=lang)
-    if not locale_candidates.exists() and lang != "en":
-        locale_candidates = candidate_qs.filter(locale__language_code="en")
-    if not locale_candidates.exists():
-        locale_candidates = global_qs.filter(locale__language_code="en")
-    if not locale_candidates.exists():
-        locale_candidates = candidate_qs
+    queryset = HomePage.objects.select_related("locale").prefetch_related("featured_projects_items", "team_members_items")
+    locale_candidates, candidate_qs = get_locale_candidates_with_global_fallback(
+        queryset,
+        request,
+        lang,
+    )
 
     candidates = list(locale_candidates)
     if not candidates:
@@ -496,22 +448,13 @@ def _get_page_for_api(request):
 
 def _get_page_for_direct_contact_api(request):
     lang = _resolve_language(request)
-    root_page = _get_site_root_page(request)
 
-    candidate_qs = HomePage.objects.select_related("locale").prefetch_related("contact_link_items")
-    global_qs = HomePage.objects.select_related("locale").prefetch_related("contact_link_items")
-    if root_page is not None:
-        candidate_qs = candidate_qs.child_of(root_page)
-
-    locale_candidates = candidate_qs.filter(locale__language_code=lang)
-    if not locale_candidates.exists():
-        locale_candidates = global_qs.filter(locale__language_code=lang)
-    if not locale_candidates.exists() and lang != "en":
-        locale_candidates = candidate_qs.filter(locale__language_code="en")
-    if not locale_candidates.exists():
-        locale_candidates = global_qs.filter(locale__language_code="en")
-    if not locale_candidates.exists():
-        locale_candidates = candidate_qs
+    queryset = HomePage.objects.select_related("locale").prefetch_related("contact_link_items")
+    locale_candidates, candidate_qs = get_locale_candidates_with_global_fallback(
+        queryset,
+        request,
+        lang,
+    )
 
     candidates = list(locale_candidates)
     if not candidates:
@@ -555,9 +498,7 @@ def _serialize_media_url(value, request=None):
 
     if hasattr(value, "url"):
         url = value.url
-        if request is not None:
-            return request.build_absolute_uri(url)
-        return url
+        return build_absolute_asset_url(request, url)
 
     if isinstance(value, str):
         return value
@@ -694,14 +635,19 @@ def serialize_home_page(page, request, requested_lang=None):
         )
     )
 
+    meta = {
+        "seo_title": seo_title,
+        "search_description": search_description,
+    }
+    translations = build_translations_map(page)
+    if translations:
+        meta["translations"] = translations
+
     return {
         "type": "home_cms.HomePage",
         "title": page.title,
         "locale": response_locale,
-        "meta": {
-            "seo_title": seo_title,
-            "search_description": search_description,
-        },
+        "meta": meta,
         "fields": {
             "copy": _get_home_copy(page, response_locale),
             "hero_video_horizontal": hero_video_horizontal,

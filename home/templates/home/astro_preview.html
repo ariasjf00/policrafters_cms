@@ -63,15 +63,13 @@
             window.setTimeout(sendPreviewPayload, delay);
         });
 
-        let retries = 0;
-        const maxRetries = 20;
         const retryTimer = window.setInterval(() => {
             sendPreviewPayload();
-            retries += 1;
-            if (retries >= maxRetries) {
-                window.clearInterval(retryTimer);
-            }
         }, 1000);
+
+        window.addEventListener("beforeunload", () => {
+            window.clearInterval(retryTimer);
+        });
     });
 </script>
 
