@@ -5,6 +5,7 @@ import re
 from home.models import HomePage
 from shared_cms.api_utils import (
     build_absolute_asset_url,
+    build_public_page_url,
     build_translations_map,
     get_locale_candidates_with_global_fallback,
     resolve_request_language,
@@ -385,27 +386,6 @@ def _home_page_priority(page):
     return score
 
 
-def _direct_contact_page_priority(page):
-    if page is None:
-        return -1
-
-    links_count = 0
-    contact_items = getattr(page, "contact_link_items", None)
-    if contact_items is not None and hasattr(contact_items, "count"):
-        links_count = contact_items.count()
-
-    has_contact_copy = bool(
-        _normalize_copy_text(getattr(page, "contact_heading", ""))
-        or _normalize_copy_text(getattr(page, "contact_cta", ""))
-    )
-
-    score = _home_page_priority(page)
-    score += links_count * 10000
-    if has_contact_copy:
-        score += 1000
-    return score
-
-
 def _get_page_for_api(request):
     lang = _resolve_language(request)
 
@@ -447,23 +427,7 @@ def _get_page_for_api(request):
 
 
 def _get_page_for_direct_contact_api(request):
-    lang = _resolve_language(request)
-
-    queryset = HomePage.objects.select_related("locale").prefetch_related("contact_link_items")
-    locale_candidates, candidate_qs = get_locale_candidates_with_global_fallback(
-        queryset,
-        request,
-        lang,
-    )
-
-    candidates = list(locale_candidates)
-    if not candidates:
-        candidates = list(candidate_qs)
-
-    if not candidates:
-        return None
-
-    return max(candidates, key=_direct_contact_page_priority)
+    return None
 
 
 def _get_direct_contact_block_for_api(request):
@@ -638,6 +602,7 @@ def serialize_home_page(page, request, requested_lang=None):
     meta = {
         "seo_title": seo_title,
         "search_description": search_description,
+        "canonical_url": build_public_page_url(page, locale_code=response_locale),
     }
     translations = build_translations_map(page)
     if translations:
@@ -682,6 +647,7 @@ def serialize_direct_contact_block(page, request, requested_lang=None):
     )
 
     contact_items = getattr(page, "contact_link_items", None)
+    contact_links = []
     if contact_items is not None and hasattr(contact_items, "all"):
         contact_links = _get_related_items_payload(
             contact_items.all().order_by("sort_order", "pk"),
@@ -691,22 +657,15 @@ def serialize_direct_contact_block(page, request, requested_lang=None):
                 "url": item.url or "",
             },
         )
-    else:
-        contact_links = _get_legacy_contact_links(
-            page,
-            response_locale,
-        )
-
-    copy_data = _get_home_copy(page, response_locale)
 
     return {
         "type": "shared_cms.DirectContactBlock",
-        "title": page.title,
+        "title": getattr(page, "title", ""),
         "locale": response_locale,
         "fields": {
             "copy": {
-                "contact_heading": copy_data.get("contact_heading", ""),
-                "contact_cta": copy_data.get("contact_cta", ""),
+                "contact_heading": _normalize_copy_text(getattr(page, "contact_heading", "")),
+                "contact_cta": _normalize_copy_text(getattr(page, "contact_cta", "")),
             },
             "contact_links": contact_links,
         },
@@ -832,30 +791,20 @@ def direct_contact_api(request):
         )
         return _json_no_cache_response(data)
 
-    page = _get_page_for_direct_contact_api(request)
-
-    if page is None:
-        return _json_no_cache_response(
-            {
-                "type": "shared_cms.DirectContactBlock",
-                "title": "",
-                "locale": requested_lang,
-                "fields": {
-                    "copy": {
-                        "contact_heading": "",
-                        "contact_cta": "",
-                    },
-                    "contact_links": [],
+    return _json_no_cache_response(
+        {
+            "type": "shared_cms.DirectContactBlock",
+            "title": "",
+            "locale": requested_lang,
+            "fields": {
+                "copy": {
+                    "contact_heading": "",
+                    "contact_cta": "",
                 },
-            }
-        )
-
-    data = serialize_direct_contact_block(
-        page,
-        request,
-        requested_lang,
+                "contact_links": [],
+            },
+        }
     )
-    return _json_no_cache_response(data)
 
 
 def brands_header_api(request):

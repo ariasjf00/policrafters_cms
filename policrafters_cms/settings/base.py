@@ -233,6 +233,7 @@ ASTRO_PREVIEW_URL = os.environ.get(
     "ASTRO_PREVIEW_URL",
     "http://localhost:4321",
 ).rstrip("/")
+SITE_URL = env("SITE_URL", default="https://policrafters.com").rstrip("/")
 
 # Wagtail settings
 

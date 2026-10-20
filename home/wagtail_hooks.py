@@ -1,7 +1,9 @@
+from django.conf import settings
 from wagtail.admin.views.pages.edit import EditView
 from wagtail.admin.wagtail_hooks import PageListingViewLiveButton
 
 from policrafters_cms.middleware import add_locale_to_url
+from shared_cms.api_utils import build_public_page_url
 
 
 _original_page_listing_view_live_button_init = PageListingViewLiveButton.__init__
@@ -14,7 +16,13 @@ def _patched_page_listing_view_live_button_init(self, *args, **kwargs):
     page = getattr(self, "page", None)
     locale = getattr(getattr(page, "locale", None), "language_code", None)
     if page and locale and getattr(self, "url", None):
-        self.url = add_locale_to_url(self.url, locale)
+        public_url = build_public_page_url(
+            page,
+            locale_code=locale,
+            site_url=getattr(settings, "SITE_URL", "https://policrafters.com"),
+        )
+        if public_url:
+            self.url = public_url
 
 
 def _patched_edit_view_get_preview_url(self):

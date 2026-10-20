@@ -129,17 +129,6 @@
 	<section class="section">
 		<h2>{{ page.contact_heading|default:"Contact heading" }}</h2>
 		<p class="meta-copy">CTA: {{ page.contact_cta|default:"-" }}</p>
-		<ul class="links">
-			{% for item in page.contact_link_items.all %}
-			<li>
-				<p><strong>{{ item.title }}</strong></p>
-				<p>{{ item.description }}</p>
-				<p><a href="{{ item.url }}">{{ item.url }}</a></p>
-			</li>
-			{% empty %}
-			<li class="empty">No contact links yet.</li>
-			{% endfor %}
-		</ul>
 	</section>
 </main>
 

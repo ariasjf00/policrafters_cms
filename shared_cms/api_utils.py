@@ -154,6 +154,60 @@ def build_absolute_asset_url(request, value):
         return normalized
 
 
+def _public_locale_prefix(locale_code):
+    code = normalize_supported_language(locale_code)
+    if code == "es":
+        return "/es"
+    return ""
+
+
+def build_public_page_url(page, locale_code=None, site_url=None):
+    if page is None:
+        return ""
+
+    candidate_url = ""
+    if hasattr(page, "url"):
+        candidate_url = str(getattr(page, "url", "") or "")
+    if not candidate_url and hasattr(page, "url_path"):
+        candidate_url = str(getattr(page, "url_path", "") or "")
+    if not candidate_url and hasattr(page, "live"):
+        candidate_url = str(getattr(page.live, "url", "") or "")
+
+    if not candidate_url and isinstance(page, str):
+        candidate_url = page
+
+    page_path = str(candidate_url or "").strip()
+    if not page_path:
+        return ""
+
+    parsed = urlsplit(page_path)
+    if parsed.scheme and parsed.netloc:
+        page_path = parsed.path or "/"
+
+    page_path = page_path or "/"
+    page_path = page_path.rstrip("/") or "/"
+
+    if page.__class__.__name__ == "HomePage" and page_path.lower().endswith("/home"):
+        page_path = "/"
+    elif page.__class__.__name__ == "HomePage" and page_path.lower().endswith("/home-2"):
+        page_path = "/"
+
+    locale_prefix = _public_locale_prefix(locale_code)
+    if locale_code is None and hasattr(page, "locale"):
+        locale_prefix = _public_locale_prefix(getattr(page.locale, "language_code", None))
+
+    if page_path == "/":
+        localized_path = locale_prefix or "/"
+    else:
+        if locale_prefix and not page_path.startswith(locale_prefix):
+            localized_path = f"{locale_prefix}{page_path}"
+        else:
+            localized_path = page_path
+
+    base_url = str(site_url or getattr(settings, "SITE_URL", "https://policrafters.com") or "https://policrafters.com").strip().rstrip("/")
+    return f"{base_url}{localized_path}"
+
+
 def get_site_root_page(request):
     default_site = Site.objects.filter(is_default_site=True).order_by("-id").first()
     if default_site is not None and default_site.root_page_id is not None:

@@ -1,4 +1,4 @@
-from home.models import HomeContactLinkItem, HomePage
+from home.models import HomePage
 from shared_cms.models import DirectContactBlock, DirectContactLinkItem
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -10,6 +10,7 @@ from wagtail.models import Locale, Page, Site
 from wagtail.test.utils import WagtailPageTestCase
 from policrafters_cms.middleware import force_preview_locale
 from home.templatetags.localized_urls import add_locale_query
+from shared_cms.api_utils import build_public_page_url
 
 
 class HomeSetUpTests(WagtailPageTestCase):
@@ -85,7 +86,7 @@ class LocaleOverrideMiddlewareTests(TestCase):
         self.assertEqual(request.LANGUAGE_CODE, "en")
         self.assertEqual(translation.get_language(), "en")
 
-    def test_page_listing_view_live_button_uses_page_locale(self):
+    def test_page_listing_view_live_button_uses_public_locale_url(self):
         root_page = Page.get_first_root_node()
         site = Site.objects.filter(is_default_site=True).first()
         if site is None:
@@ -101,7 +102,15 @@ class LocaleOverrideMiddlewareTests(TestCase):
         )
 
         self.assertIsNotNone(button.url)
-        self.assertIn("lang=en", button.url)
+        self.assertEqual(button.url, "https://policrafters.com/")
+
+    def test_build_public_page_url_localizes_spanish_routes(self):
+        root_page = Page.get_first_root_node()
+        homepage = HomePage(title="Home")
+        root_page.add_child(instance=homepage)
+
+        public_url = build_public_page_url(homepage, locale_code="es")
+        self.assertEqual(public_url, "https://policrafters.com/es")
 
     def test_add_locale_query_appends_lang_parameter(self):
         url = add_locale_query("http://localhost:8000/", "es")
@@ -147,6 +156,7 @@ class HomeApiTests(WagtailPageTestCase):
 
         data = response.json()
         self.assertEqual(data["locale"], "en")
+        self.assertEqual(data["meta"]["canonical_url"], "https://policrafters.com/")
         self.assertIsInstance(data["fields"]["copy"]["hero_heading"], str)
         self.assertEqual(data["fields"]["copy"]["hero_heading"], "HOME HEADING")
 
@@ -246,9 +256,16 @@ class DirectContactApiTests(WagtailPageTestCase):
         )
         root_page.add_child(instance=self.homepage)
 
-        HomeContactLinkItem.objects.create(
-            page=self.homepage,
+        self.snippet = DirectContactBlock.objects.create(
             locale=self.homepage.locale,
+            title="Global direct contact",
+            contact_heading="Get in touch",
+            contact_cta="Contact us",
+        )
+        DirectContactLinkItem.objects.create(
+            block=self.snippet,
+            locale=self.homepage.locale,
+            sort_order=1,
             title="Whatsapp",
             description="Chat with our team",
             url="https://wa.me/123456789",
@@ -276,12 +293,13 @@ class DirectContactApiTests(WagtailPageTestCase):
         self.assertEqual(data["locale"], "en")
 
     def test_direct_contact_api_prefers_snippet_when_available(self):
-        block = DirectContactBlock.objects.create(
-            locale=self.homepage.locale,
-            title="Global direct contact",
-            contact_heading="Snippet heading",
-            contact_cta="Snippet CTA",
-        )
+        block = DirectContactBlock.objects.get(locale=self.homepage.locale)
+        block.title = "Global direct contact"
+        block.contact_heading = "Snippet heading"
+        block.contact_cta = "Snippet CTA"
+        block.save()
+
+        DirectContactLinkItem.objects.filter(block=block).delete()
         DirectContactLinkItem.objects.create(
             block=block,
             locale=self.homepage.locale,

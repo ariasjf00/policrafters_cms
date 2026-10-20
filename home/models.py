@@ -181,7 +181,6 @@ class HomePage(Page):
         InlinePanel("featured_projects_items", label="Featured projects"),
         InlinePanel("team_members_items", label="Team members"),
         InlinePanel("values_slide_items", label="Values slides"),
-        InlinePanel("contact_link_items", label="Contact links"),
     ]
 
 
@@ -257,19 +256,3 @@ class HomeValueSlideItem(TranslatableMixin, Orderable):
         FieldPanel("description"),
     ]
 
-
-class HomeContactLinkItem(TranslatableMixin, Orderable):
-    page = ParentalKey(
-        "home.HomePage",
-        related_name="contact_link_items",
-        on_delete=models.CASCADE,
-    )
-    title = models.CharField(max_length=150)
-    description = models.TextField(blank=True)
-    url = models.URLField()
-
-    panels = [
-        FieldPanel("title"),
-        FieldPanel("description"),
-        FieldPanel("url"),
-    ]

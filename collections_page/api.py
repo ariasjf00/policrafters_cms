@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from collections_page.models import CollectionIndexPage, CollectionProductItem
 from shared_cms.api_utils import (
     build_absolute_asset_url,
+    build_public_page_url,
     build_translations_map,
     get_page_with_locale_fallback,
     resolve_request_language,
@@ -335,6 +336,7 @@ def serialize_collection_product(page, product, request):
     meta = {
         "seo_title": seo_title,
         "search_description": _normalize_copy_text(getattr(page, "search_description", "")),
+        "canonical_url": build_public_page_url(product, locale_code=response_locale),
     }
     translations = build_translations_map(
         product,
@@ -369,6 +371,7 @@ def serialize_collection_index_page(page, request, requested_lang=None):
     meta = {
         "seo_title": seo_title,
         "search_description": _normalize_copy_text(getattr(page, "search_description", "")),
+        "canonical_url": build_public_page_url(page, locale_code=response_locale),
     }
     translations = build_translations_map(page)
     if translations:
