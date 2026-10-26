@@ -154,6 +154,95 @@ def build_absolute_asset_url(request, value):
         return normalized
 
 
+def _normalize_image_text(value):
+    if value is None or isinstance(value, (dict, list)):
+        return ""
+    return " ".join(str(value).split())
+
+
+def normalize_image_payload(value, request):
+    image_data = value if isinstance(value, dict) else {}
+    payload = {
+        "url": build_absolute_asset_url(request, image_data.get("url")),
+        "alt": _normalize_image_text(image_data.get("alt")),
+    }
+
+    for dimension in ("width", "height"):
+        dimension_value = image_data.get(dimension)
+        if (
+            isinstance(dimension_value, int)
+            and not isinstance(dimension_value, bool)
+            and dimension_value > 0
+        ):
+            payload[dimension] = dimension_value
+
+    rendition_data = image_data.get("renditions")
+    if isinstance(rendition_data, dict):
+        renditions = {}
+        for width, url in rendition_data.items():
+            width_key = _normalize_image_text(width)
+            rendition_url = build_absolute_asset_url(request, url)
+            if width_key and rendition_url:
+                renditions[width_key] = rendition_url
+        if renditions:
+            payload["renditions"] = renditions
+
+    return payload
+
+
+def serialize_image_payload(image, request=None, alt_text=""):
+    if image is None:
+        return {
+            "url": "",
+            "alt": _normalize_image_text(alt_text),
+        }
+
+    image_file = getattr(image, "file", None)
+    image_url = image_file.url if image_file else ""
+    payload = {
+        "url": build_absolute_asset_url(request, image_url),
+        "alt": _normalize_image_text(alt_text),
+    }
+
+    if not payload["alt"]:
+        for attribute in ("alt", "alt_text", "description", "title"):
+            payload["alt"] = _normalize_image_text(getattr(image, attribute, None))
+            if payload["alt"]:
+                break
+
+    for dimension in ("width", "height"):
+        dimension_value = getattr(image, dimension, None)
+        if (
+            isinstance(dimension_value, int)
+            and not isinstance(dimension_value, bool)
+            and dimension_value > 0
+        ):
+            payload[dimension] = dimension_value
+
+    get_renditions = getattr(image, "get_renditions", None)
+    is_svg = getattr(image, "is_svg", None)
+    if image_file and callable(get_renditions) and not (callable(is_svg) and is_svg()):
+        rendition_widths = (800, 1600)
+        rendition_specs = tuple(
+            f"width-{width}|format-webp" for width in rendition_widths
+        )
+        generated_renditions = get_renditions(*rendition_specs)
+        renditions = {}
+        for width, spec in zip(rendition_widths, rendition_specs):
+            rendition = generated_renditions.get(spec)
+            if rendition is not None and getattr(rendition, "file", None):
+                rendition_url = build_absolute_asset_url(
+                    request,
+                    rendition.file.url,
+                )
+                if rendition_url:
+                    renditions[str(width)] = rendition_url
+        if renditions:
+            payload["renditions"] = renditions
+
+    return payload
+
+
 def _public_locale_prefix(locale_code):
     code = normalize_supported_language(locale_code)
     if code == "es":

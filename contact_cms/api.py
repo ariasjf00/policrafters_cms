@@ -2,10 +2,10 @@ from django.http import JsonResponse
 
 from contact_cms.models import ContactPage
 from shared_cms.api_utils import (
-    build_absolute_asset_url,
     build_translations_map,
     get_page_with_locale_fallback,
     resolve_request_language,
+    serialize_image_payload as _get_image_payload,
 )
 
 
@@ -25,34 +25,6 @@ def _normalize_locale_code(locale_code):
     if locale.startswith("es"):
         return "es"
     return "en"
-
-
-def _build_absolute_url(request, value):
-    url = _normalize_copy_text(value)
-    return build_absolute_asset_url(request, url)
-
-
-def _get_image_payload(image, request):
-    if not image:
-        return {"url": "", "alt": ""}
-
-    image_url = image.file.url if getattr(image, "file", None) else ""
-    image_url = _build_absolute_url(request, image_url)
-
-    alt_text = ""
-    for attr_name in ("alt", "alt_text"):
-        value = getattr(image, attr_name, None)
-        if value:
-            alt_text = value
-            break
-
-    if not alt_text:
-        alt_text = getattr(image, "title", "") or ""
-
-    return {
-        "url": image_url,
-        "alt": alt_text,
-    }
 
 
 def _get_page_for_api(request):

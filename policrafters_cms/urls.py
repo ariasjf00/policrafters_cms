@@ -14,6 +14,8 @@ from home.api import brands_header_api, direct_contact_api, home_page_api
 from renovations.api import renovation_index_api
 from search import views as search_views
 from services.api import services_page_api
+from site_settings.api import site_settings_api
+from shared_cms.redirects_api import redirects_api
 from terms_cms.api import terms_page_api
 from warranty_cms.api import warranty_page_api
 from why_policrafters.api import why_policrafters_page_api
@@ -40,6 +42,10 @@ urlpatterns = [
     path("api/renovations/", renovation_index_api),
     path("api/services", services_page_api, name="services_page_api"),
     path("api/services/", services_page_api),
+    path("api/site-settings", site_settings_api, name="site_settings_api"),
+    path("api/site-settings/", site_settings_api),
+    path("api/redirects", redirects_api, name="redirects_api"),
+    path("api/redirects/", redirects_api),
     path("api/products", product_detail_api, name="product_detail_api"),
     path("api/products/", product_detail_api),
     path("api/collections/product", product_detail_api),

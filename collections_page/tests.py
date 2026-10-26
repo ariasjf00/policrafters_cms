@@ -1,7 +1,10 @@
+import json
 from io import BytesIO
 
+from bs4 import BeautifulSoup
 from PIL import Image
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import RequestFactory
 
 from collections_page.models import (
     CollectionCategoryItem,
@@ -148,6 +151,51 @@ class CollectionsApiTests(WagtailPageTestCase):
         self.assertEqual(shower_doors["types"][0]["key"], "hinged")
         self.assertEqual(shower_doors["types"][1]["key"], "sliding")
         self.assertEqual(shower_doors["types"][0]["products"][0]["title"], "Alpha Hinge")
+
+    def test_collections_preview_keeps_secondary_categories_and_empty_types(self):
+        CollectionCategoryItem.objects.create(
+            page=self.collections_page,
+            key="mirrors",
+            label="Mirrors",
+        )
+        CollectionCategoryItem.objects.create(
+            page=self.collections_page,
+            key="storage-systems",
+            label="Storage systems",
+        )
+        CollectionTypeItem.objects.create(
+            page=self.collections_page,
+            category_key="mirrors",
+            key="wall-mounted",
+            label="Wall mounted",
+        )
+
+        response = self.collections_page.serve_preview(
+            RequestFactory().get("/admin/"),
+            mode_name="default",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        preview_script = BeautifulSoup(
+            response.content,
+            "html.parser",
+        ).find("script", id="wagtail-preview-data")
+        self.assertIsNotNone(preview_script)
+        preview_data = json.loads(preview_script.string)
+        categories = preview_data["fields"]["categories"]
+
+        mirrors = next(category for category in categories if category["key"] == "mirrors")
+        self.assertFalse(mirrors["has_products"])
+        self.assertEqual(
+            mirrors["types"],
+            [{"key": "wall-mounted", "label": "Wall mounted", "products": []}],
+        )
+
+        storage_systems = next(
+            category for category in categories if category["key"] == "storage-systems"
+        )
+        self.assertFalse(storage_systems["has_products"])
+        self.assertEqual(storage_systems["types"], [])
 
     def test_product_detail_api_resolves_full_slug(self):
         product = CollectionProductItem.objects.create(

@@ -1,10 +1,10 @@
 from django.http import JsonResponse
 
 from shared_cms.api_utils import (
-    build_absolute_asset_url,
     build_translations_map,
     get_page_with_locale_fallback,
     resolve_request_language,
+    serialize_image_payload as _get_image_payload,
 )
 from why_policrafters.models import WhyPolicraftersPage
 
@@ -27,11 +27,6 @@ def _normalize_locale_code(locale_code):
     return "en"
 
 
-def _build_absolute_url(request, value):
-    url = _normalize_copy_text(value)
-    return build_absolute_asset_url(request, url)
-
-
 def _normalize_body(value):
     if isinstance(value, list):
         body = []
@@ -45,29 +40,6 @@ def _normalize_body(value):
     if not text:
         return []
     return [text]
-
-
-def _get_image_payload(image, request, alt_text=""):
-    if not image:
-        return {"url": "", "alt": _normalize_copy_text(alt_text)}
-
-    image_url = image.file.url if getattr(image, "file", None) else ""
-    image_url = _build_absolute_url(request, image_url)
-
-    fallback_alt = ""
-    for attr_name in ("alt", "alt_text"):
-        value = getattr(image, attr_name, None)
-        if value:
-            fallback_alt = value
-            break
-
-    if not fallback_alt:
-        fallback_alt = getattr(image, "title", "") or ""
-
-    return {
-        "url": image_url,
-        "alt": _normalize_copy_text(alt_text) or _normalize_copy_text(fallback_alt),
-    }
 
 
 def _get_page_for_api(request):

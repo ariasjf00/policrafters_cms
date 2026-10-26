@@ -59,9 +59,11 @@ INSTALLED_APPS = [
     "warranty_cms",
     "why_policrafters",
     "shared_cms",
+    "site_settings",
     "search",
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",
+    "wagtail.contrib.settings",
     "wagtail_localize",
     "wagtail_localize.locales",
     "wagtail.embeds",
@@ -233,13 +235,14 @@ ASTRO_PREVIEW_URL = os.environ.get(
     "ASTRO_PREVIEW_URL",
     "http://localhost:4321",
 ).rstrip("/")
-SITE_URL = env("SITE_URL", default="https://policrafters.com").rstrip("/")
+SITE_URL = env("SITE_URL", default="https://astro.novatierra.cloud").rstrip("/")
 
 # Wagtail settings
 
 WAGTAIL_SITE_NAME = "policrafters_cms"
 WAGTAIL_I18N_ENABLED = True
 WAGTAIL_CONTENT_LANGUAGES = LANGUAGES
+WAGTAILIMAGES_IMAGE_FORM_BASE = "shared_cms.forms.RequiredAltTextImageForm"
 
 # Search
 # https://docs.wagtail.org/en/stable/topics/search/backends.html

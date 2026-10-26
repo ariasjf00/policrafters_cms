@@ -7,6 +7,7 @@ from shared_cms.api_utils import (
     build_translations_map,
     get_page_with_locale_fallback,
     resolve_request_language,
+    serialize_image_payload as _get_image_payload,
 )
 
 
@@ -31,34 +32,6 @@ def _normalize_locale_code(locale_code):
 def _build_absolute_url(request, value):
     url = _normalize_copy_text(value)
     return build_absolute_asset_url(request, url)
-
-
-def _get_image_payload(image, request, alt_text=""):
-    if not image:
-        return {
-            "url": "",
-            "alt": _normalize_copy_text(alt_text),
-        }
-
-    image_url = image.file.url if getattr(image, "file", None) else ""
-    image_url = _build_absolute_url(request, image_url)
-
-    fallback_alt = ""
-    for attr_name in ("alt", "alt_text"):
-        value = getattr(image, attr_name, None)
-        if value:
-            fallback_alt = value
-            break
-
-    if not fallback_alt:
-        fallback_alt = getattr(image, "title", "") or ""
-
-    normalized_alt = _normalize_copy_text(alt_text) or _normalize_copy_text(fallback_alt)
-
-    return {
-        "url": image_url,
-        "alt": normalized_alt,
-    }
 
 
 def _get_page_for_api(request):

@@ -1,8 +1,22 @@
+from io import BytesIO
+from tempfile import TemporaryDirectory
+
+from PIL import Image
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import RequestFactory, TestCase, override_settings
 from wagtail.models import Locale, Page, Site
+from wagtail.images import get_image_model
+from wagtail.images.forms import get_image_form
 
-from shared_cms.api_utils import build_absolute_asset_url, normalize_supported_language, resolve_request_language
+from shared_cms.api_utils import (
+    build_absolute_asset_url,
+    normalize_image_payload,
+    normalize_supported_language,
+    resolve_request_language,
+    serialize_image_payload,
+)
+from shared_cms.forms import RequiredAltTextImageForm
 from shared_cms.models import BrandsHeaderBlock, DirectContactBlock
 
 
@@ -181,3 +195,84 @@ class BrandsHeaderBlockValidationTests(TestCase):
 
         with self.assertRaises(ValidationError):
             duplicate.full_clean()
+
+
+class ImagePayloadTests(TestCase):
+    def setUp(self):
+        self.media_directory = TemporaryDirectory()
+        self.addCleanup(self.media_directory.cleanup)
+        self.media_settings = override_settings(
+            MEDIA_ROOT=self.media_directory.name,
+            WAGTAILADMIN_BASE_URL="https://cms.policrafters.com",
+        )
+        self.media_settings.enable()
+        self.addCleanup(self.media_settings.disable)
+
+    def _create_image(self):
+        buffer = BytesIO()
+        Image.new("RGB", (2000, 1200), color="white").save(buffer, format="PNG")
+        return get_image_model().objects.create(
+            title="Image title",
+            description="  Descriptive   alternative text  ",
+            file=SimpleUploadedFile(
+                "seo-image.png",
+                buffer.getvalue(),
+                content_type="image/png",
+            ),
+        )
+
+    def test_serializes_source_dimensions_alt_and_webp_renditions(self):
+        request = RequestFactory().get("/api/home")
+        image = self._create_image()
+
+        payload = serialize_image_payload(image, request)
+
+        self.assertEqual(payload["alt"], "Descriptive alternative text")
+        self.assertEqual(payload["width"], 2000)
+        self.assertEqual(payload["height"], 1200)
+        self.assertTrue(payload["url"].startswith("https://cms.policrafters.com/media/"))
+        self.assertEqual(set(payload["renditions"]), {"800", "1600"})
+        self.assertTrue(all(url.endswith(".webp") for url in payload["renditions"].values()))
+
+    def test_normalizes_extended_image_payloads_from_legacy_json(self):
+        request = RequestFactory().get("/api/home")
+
+        payload = normalize_image_payload(
+            {
+                "url": "/media/images/source.png",
+                "alt": "  Legacy   image ",
+                "width": 1200,
+                "height": 800,
+                "renditions": {"800": "/media/images/source-800.webp"},
+            },
+            request,
+        )
+
+        self.assertEqual(payload["alt"], "Legacy image")
+        self.assertEqual(payload["width"], 1200)
+        self.assertEqual(payload["height"], 800)
+        self.assertEqual(
+            payload["renditions"]["800"],
+            "https://cms.policrafters.com/media/images/source-800.webp",
+        )
+
+    def test_missing_image_keeps_legacy_url_and_alt_shape(self):
+        self.assertEqual(
+            serialize_image_payload(None, alt_text="Fallback text"),
+            {"url": "", "alt": "Fallback text"},
+        )
+
+    def test_wagtail_image_form_requires_alt_text(self):
+        image_form = get_image_form(get_image_model())
+        form = image_form(
+            data={
+                "title": "Image title",
+                "description": "",
+                "collection": "",
+            }
+        )
+
+        self.assertIsInstance(form, RequiredAltTextImageForm)
+        self.assertTrue(form.fields["description"].required)
+        self.assertFalse(form.is_valid())
+        self.assertIn("description", form.errors)

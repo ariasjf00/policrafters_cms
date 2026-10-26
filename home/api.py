@@ -8,7 +8,9 @@ from shared_cms.api_utils import (
     build_public_page_url,
     build_translations_map,
     get_locale_candidates_with_global_fallback,
+    normalize_image_payload,
     resolve_request_language,
+    serialize_image_payload as _get_image_payload,
 )
 from shared_cms.models import BrandsHeaderBlock, DirectContactBlock
 
@@ -32,37 +34,8 @@ def _serialize_richtext(value):
 _resolve_language = resolve_request_language
 
 
-def _build_absolute_url(request, value):
-    url = _normalize_copy_text(value)
-    return build_absolute_asset_url(request, url)
-
-
-def _get_image_payload(image, request=None):
-    if not image:
-        return {"url": "", "alt": ""}
-
-    image_url = image.file.url if getattr(image, "file", None) else ""
-    image_url = _build_absolute_url(request, image_url)
-    alt_text = ""
-
-    for attr_name in ("alt", "alt_text"):
-        value = getattr(image, attr_name, None)
-        if value:
-            alt_text = value
-            break
-
-    if not alt_text:
-        alt_text = getattr(image, "title", "") or ""
-
-    return {"url": image_url, "alt": alt_text}
-
-
 def _normalize_image_dict(value, request):
-    image_data = _get_json_dict(value)
-    return {
-        "url": _build_absolute_url(request, image_data.get("url")),
-        "alt": _normalize_copy_text(image_data.get("alt")),
-    }
+    return normalize_image_payload(_get_json_dict(value), request)
 
 
 def _get_json_dict(value):
