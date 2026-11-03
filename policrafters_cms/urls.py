@@ -13,6 +13,7 @@ from finance.api import finance_page_api
 from home.api import brands_header_api, direct_contact_api, home_page_api
 from renovations.api import renovation_index_api
 from search import views as search_views
+from shared_cms.api import footer_api
 from services.api import services_page_api
 from site_settings.api import site_settings_api
 from shared_cms.redirects_api import redirects_api
@@ -32,6 +33,8 @@ urlpatterns = [
     path("api/brands-header/", brands_header_api),
     path("api/brandsheader", brands_header_api),
     path("api/brandsheader/", brands_header_api),
+    path("api/footer", footer_api, name="footer_api"),
+    path("api/footer/", footer_api),
     path("api/catalogs", catalogs_index_api, name="catalogs_index_api"),
     path("api/catalogs/", catalogs_index_api),
     path("api/collections", collections_index_api, name="collections_index_api"),

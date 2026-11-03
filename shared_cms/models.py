@@ -139,3 +139,117 @@ class BrandsHeaderLogoItem(TranslatableMixin, Orderable):
         FieldPanel("placeholder_text"),
         FieldPanel("image"),
     ]
+
+
+@register_snippet
+class FooterBlock(TranslatableMixin, ClusterableModel):
+    title = models.CharField(max_length=255, default="Footer")
+    blurb_1 = models.TextField(blank=True)
+    blurb_2 = models.TextField(blank=True)
+    phone_label = models.CharField(max_length=255, blank=True)
+    residential_label = models.CharField(max_length=255, blank=True)
+    email_label = models.CharField(max_length=255, blank=True)
+    commercial_label = models.CharField(max_length=255, blank=True)
+    address_label = models.CharField(max_length=255, blank=True)
+    social_label = models.CharField(max_length=255, blank=True)
+    copyright_text = models.CharField(max_length=255, blank=True)
+
+    panels = [
+        MultiFieldPanel(
+            [
+                FieldPanel("title"),
+                FieldPanel("blurb_1"),
+                FieldPanel("blurb_2"),
+                FieldPanel("phone_label"),
+                FieldPanel("residential_label"),
+                FieldPanel("email_label"),
+                FieldPanel("commercial_label"),
+                FieldPanel("address_label"),
+                FieldPanel("social_label"),
+                FieldPanel("copyright_text"),
+            ],
+            heading="Footer content",
+        ),
+        InlinePanel("navigation_links", label="Navigation links"),
+        InlinePanel("residential_links", label="Residential links"),
+        InlinePanel("commercial_links", label="Commercial links"),
+        InlinePanel("social_links", label="Social links"),
+    ]
+
+    def __str__(self):
+        return self.title
+
+    def clean(self):
+        super().clean()
+
+        locale_id = _effective_locale_id(self)
+        if locale_id is None:
+            return
+
+        duplicate_exists = FooterBlock.objects.filter(locale_id=locale_id).exclude(pk=self.pk).exists()
+        if duplicate_exists:
+            raise ValidationError("Only one FooterBlock is allowed per locale.")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["translation_key", "locale"],
+                name="unique_translation_key_locale_shared_cms_footerblock",
+            ),
+            models.UniqueConstraint(
+                fields=["locale"],
+                name="unique_footerblock_locale",
+            ),
+        ]
+
+
+class FooterLinkFields(models.Model):
+    key = models.CharField(max_length=100)
+    label = models.CharField(max_length=255)
+    href = models.CharField(max_length=1000)
+    localized_path = models.CharField(max_length=1000, blank=True)
+
+    panels = [
+        FieldPanel("key"),
+        FieldPanel("label"),
+        FieldPanel("href"),
+        FieldPanel("localized_path"),
+    ]
+
+    class Meta:
+        abstract = True
+
+
+class FooterNavigationLink(TranslatableMixin, Orderable, FooterLinkFields):
+    footer = ParentalKey(
+        "shared_cms.FooterBlock",
+        related_name="navigation_links",
+        on_delete=models.CASCADE,
+    )
+
+
+class FooterResidentialLink(TranslatableMixin, Orderable, FooterLinkFields):
+    footer = ParentalKey(
+        "shared_cms.FooterBlock",
+        related_name="residential_links",
+        on_delete=models.CASCADE,
+    )
+
+
+class FooterCommercialLink(TranslatableMixin, Orderable, FooterLinkFields):
+    footer = ParentalKey(
+        "shared_cms.FooterBlock",
+        related_name="commercial_links",
+        on_delete=models.CASCADE,
+    )
+
+
+class FooterSocialLink(TranslatableMixin, Orderable, FooterLinkFields):
+    footer = ParentalKey(
+        "shared_cms.FooterBlock",
+        related_name="social_links",
+        on_delete=models.CASCADE,
+    )
+    icon = models.CharField(max_length=100)
+
+    panels = FooterLinkFields.panels + [FieldPanel("icon")]
