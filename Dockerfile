@@ -65,11 +65,11 @@ COPY --from=builder /opt/venv /opt/venv
 RUN useradd --create-home --shell /bin/bash wagtail
 
 # Copiar código de la aplicación.
-COPY . /app
+COPY --chown=wagtail:wagtail . /app
 
 # Crear directorios utilizados por Django/Wagtail.
 RUN mkdir -p /app/static /app/media \
-    && chown -R wagtail:wagtail /app
+    && chown wagtail:wagtail /app/static /app/media
 
 USER wagtail
 
