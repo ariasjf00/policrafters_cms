@@ -2,8 +2,8 @@
 
 > **Estado de esta guía:** reproduce la arquitectura que actualmente
 > está funcionando.\
-> **Pendiente:** automatización del rebuild/deploy de Astro al publicar
-> contenido en Wagtail.
+> **Automatización:** el rebuild/deploy de Astro al publicar contenido
+> en Wagtail está implementado y probado en producción (sección 24).
 
 ## 1. Arquitectura final
 
@@ -993,8 +993,9 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 -   No ejecutar `docker compose down -v`.
 -   No conectar Django a `127.0.0.1:5434`; dentro de Docker debe usar
     `db:5432`.
--   No esperar que un Publish de Wagtail regenere por sí solo un sitio
-    Astro estático mientras la automatización no esté implementada.
+-   No asumir que un Publish de Wagtail actualizará Astro si el trigger
+    y los servicios descritos en la sección 24 no están configurados y
+    activos en el VPS.
 -   No montar `/var/run/docker.sock` dentro del contenedor Django solo
     para permitir que Wagtail despliegue el frontend.
 
